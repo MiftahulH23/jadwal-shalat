@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import { AdzanModal } from "@/components/prayer/adzan-modal"
 import { IbadahJumatScreen, jumatPeople } from "@/components/prayer/ibadah-jumat-screen"
 import { OfflineNotice } from "@/components/prayer/offline-notice"
+import { availableSlides, KajianSlide, KasSlide, PetugasSlide } from "@/components/prayer/tv-slides"
 import { SettingsDialog } from "@/components/prayer/settings-dialog"
 import { useAdzanAlerts } from "@/hooks/use-adzan-alerts"
 import { useJumatSimulation } from "@/hooks/use-jumat-simulation"
@@ -32,17 +33,35 @@ import { formatClock, formatHijri, formatLongDate, ZONE_TIMEZONES } from "@/lib/
 import { cn } from "@/lib/utils"
 import {
   arabicLabel,
+  addDays,
   dateAtOffset,
   formatDuration,
   getPrayerPhase,
+  isFriday,
   isJumat,
   prayerLabel,
+  toEpoch,
   locationLabel,
   type TimeKey,
 } from "@/lib/prayer"
 import { getRamadanState } from "@/lib/ramadan"
 import type { parseBackup } from "@/lib/backup"
-import { isRamadan, splitRunningText } from "@/lib/settings"
+import { isRamadan, jumatOfficers, splitRunningText } from "@/lib/settings"
+
+const COUNTDOWN_MS = 30_000
+const SLIDE_MS = 12_000
+const ROTATE_MIN_MS = 15 * 60_000
+/** In Ramadan the screen wakes at least this long before Subuh, for sahur. */
+const RAMADAN_WAKE_MIN = 150
+/** Positions the night clock moves between, one per minute. */
+const NIGHT_SPOTS: React.CSSProperties[] = [
+  { left: "10%", top: "12%" },
+  { right: "12%", top: "30%" },
+  { left: "38%", top: "55%" },
+  { right: "30%", bottom: "12%" },
+  { left: "14%", bottom: "20%" },
+  { right: "10%", top: "8%" },
+]
 
 const BOARD_KEYS: TimeKey[] = ["imsak", "subuh", "terbit", "dzuhur", "ashar", "maghrib", "isya"]
 const DEFAULT_RUNNING_TEXT =
@@ -139,6 +158,8 @@ export function MosqueDisplay() {
   const [soundOn, setSoundOn] = usePersistedState(SOUND_KEY, true)
   const [controlsVisible, pokeControls] = useIdleControls()
   const [fullscreen, setFullscreen] = useState(false)
+  // Night dimming is lifted for a minute after the mouse moves.
+  const [wakeUntil, setWakeUntil] = useState(0)
 
   useWakeLock()
 
@@ -220,13 +241,55 @@ export function MosqueDisplay() {
   const khutbah = isIqamah && isJumat(phase.key, phase.date)
   // Friday: one continuous "Ibadah Shalat Jumat" screen from the adzan, through khutbah, until the prayer ends.
   const jumatPraying = Boolean(praying && isJumat(praying.key, praying.date))
-  const people = jumatPeople(settings.jumat)
+  // Officers of this week's Friday (the 7-day window always contains one).
+  const friday = week.days.find((d) => isFriday(d.date))?.date ?? today
+  const people = jumatPeople(jumatOfficers(settings, friday))
+  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay()
+  const officers = !isJumat(phase.key, phase.date) ? settings.petugas[phase.key] : null
+  const officersLine = officers
+    ? [officers.imam && `Imam: ${officers.imam}`, officers.muadzin && `Muadzin: ${officers.muadzin}`].filter(Boolean).join("   ·   ")
+    : ""
+
+  // The countdown is sized by the height of the middle area (cqh) and shrinks a
+  // step for every extra line under it, so everything fits on any screen shape.
+  const extraLines = [officersLine, people && isJumat(phase.key, phase.date), ramadan].filter(Boolean).length
+  const countdownCqh = 46 - extraLines * 7
+
+  // Info slides (kas, petugas, pengajian) rotate with the countdown, only while the
+  // next prayer is still more than 15 minutes away. Timed off the clock, so screens stay in sync.
+  const slides = availableSlides(settings)
+  const canRotate = phase.kind === "waiting" && phase.end - now > ROTATE_MIN_MS && !praying
+  const cycleMs = COUNTDOWN_MS + SLIDE_MS * slides.length
+  const t = now % cycleMs
+  const slide = canRotate && slides.length && t >= COUNTDOWN_MS ? slides[Math.floor((t - COUNTDOWN_MS) / SLIDE_MS)] : null
+
+  // Night: from some time after Isya until some time before Subuh (earlier in Ramadan, for sahur).
+  const subuhDay = week.days.find((d) => d.date === phase.date)
+  const isyaAt =
+    phase.kind === "waiting" && phase.key === "subuh"
+      ? phase.prev?.key === "isya"
+        ? phase.prev.at
+        : subuhDay
+          ? toEpoch(addDays(phase.date, -1), subuhDay.isya, week.utcOffset)
+          : null
+      : null
+  const wakeBeforeSubuh = ramadan ? Math.max(settings.night.beforeSubuh, RAMADAN_WAKE_MIN) : settings.night.beforeSubuh
+  const night =
+    settings.night.enabled &&
+    isyaAt !== null &&
+    now >= isyaAt + settings.night.afterIsya * 60_000 &&
+    now < phase.end - wakeBeforeSubuh * 60_000 &&
+    now > wakeUntil
+
   // Scale the pop-up with the screen (designed for ~720px tall), e.g. 1.4x on a 1080p TV.
   const popupScale = Math.min(1.8, Math.max(1, (window.innerHeight - 40) / 720))
 
   return (
     <div
-      onPointerMove={pokeControls}
+      onPointerMove={() => {
+        pokeControls()
+        setWakeUntil(Date.now() + 60_000)
+      }}
       className={cn(
         "relative flex h-dvh flex-col overflow-hidden bg-[#04110f] text-white select-none",
         !controlsVisible && "cursor-none"
@@ -272,51 +335,78 @@ export function MosqueDisplay() {
       </header>
 
       {/* Main state */}
-      <main className="relative grid flex-1 place-items-center px-[3vw]">
+      <main className="relative grid min-h-0 flex-1 place-items-center overflow-hidden px-[3vw] [container-type:size]">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={`${phase.kind}-${phase.key}-${phase.date}`}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
-          >
-            <p
-              className={cn(
-                "inline-flex items-center gap-[0.6vw] rounded-full px-[1.5vw] py-[0.6vh] text-[min(1.8vw,3.2vh)] font-semibold tracking-[0.2em] uppercase",
-                isIqamah ? "bg-amber-400 text-emerald-950" : "bg-white/10 text-emerald-100"
-              )}
+          {slide ? (
+            <motion.div
+              key={`slide-${slide}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col items-center"
             >
-              {isIqamah ? <BellRingIcon className="size-[1em]" /> : <ClockIcon className="size-[1em]" />}
-              {isIqamah ? `Menuju iqamah ${name}` : `Menuju waktu ${name}`}
-            </p>
-            <p className="font-arabic mt-[1vh] text-[min(4vw,7vh)] leading-tight text-amber-100" lang="ar">
-              {arabicLabel(phase.key, phase.date)}
-            </p>
-            <p
-              className={cn(
-                "font-mono text-[min(15vw,26vh)] leading-none font-bold tracking-tight tabular-nums",
-                isIqamah && "text-amber-200"
-              )}
-            >
-              {formatDuration(phase.end - now)}
-            </p>
-            <p className="mt-[1.5vh] text-[min(2vw,3.4vh)] text-white/75">
-              {isIqamah
-                ? "Luruskan dan rapatkan shaf"
-                : `Adzan ${name} pukul ${formatClock(phase.end, tz).slice(0, 5)}`}
-            </p>
-            {people && isJumat(phase.key, phase.date) && (
-              <p className="mt-[1vh] text-[min(1.9vw,3.2vh)] text-amber-100">{people}</p>
-            )}
-            {ramadan && (
-              <p className="mt-[1.5vh] text-[min(1.8vw,3vh)] text-amber-200">
-                Ramadhan · Imsak {ramadan.imsak.time} ({formatDuration(ramadan.imsak.at - now)}) · Berbuka{" "}
-                {ramadan.berbuka.time} ({formatDuration(ramadan.berbuka.at - now)})
+              <p className="mb-[2.5vh] inline-flex items-center gap-[0.6vw] rounded-full bg-white/10 px-[1.5vw] py-[0.6vh] text-[min(1.8vw,3vh)] text-emerald-100">
+                <ClockIcon className="size-[1em]" /> Menuju {name}
+                <span className="font-mono font-semibold tabular-nums">{formatDuration(phase.end - now)}</span>
               </p>
-            )}
-          </motion.div>
+              {slide === "kas" && <KasSlide kas={settings.kas} />}
+              {slide === "petugas" && (
+                <PetugasSlide
+                  petugas={settings.petugas}
+                  date={today}
+                  jumat={isFriday(today) ? jumatOfficers(settings, today) : undefined}
+                />
+              )}
+              {slide === "kajian" && <KajianSlide kajian={settings.kajian} weekday={weekday} />}
+            </motion.div>
+          ) : (
+            <motion.div
+              key={`${phase.kind}-${phase.key}-${phase.date}`}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.5 }}
+              className="text-center"
+            >
+              <p
+                className={cn(
+                  "inline-flex items-center gap-[0.6vw] rounded-full px-[1.5vw] py-[1cqh] text-[min(1.8vw,5cqh)] font-semibold tracking-[0.2em] uppercase",
+                  isIqamah ? "bg-amber-400 text-emerald-950" : "bg-white/10 text-emerald-100"
+                )}
+              >
+                {isIqamah ? <BellRingIcon className="size-[1em]" /> : <ClockIcon className="size-[1em]" />}
+                {isIqamah ? `Menuju iqamah ${name}` : `Menuju waktu ${name}`}
+              </p>
+              <p className="font-arabic mt-[1.5cqh] text-[min(4vw,10cqh)] leading-tight text-amber-100" lang="ar">
+                {arabicLabel(phase.key, phase.date)}
+              </p>
+              <p
+                className={cn(
+                  "font-mono leading-none font-bold tracking-tight tabular-nums",
+                  isIqamah && "text-amber-200"
+                )}
+                style={{ fontSize: `min(15vw, ${countdownCqh}cqh)` }}
+              >
+                {formatDuration(phase.end - now)}
+              </p>
+              <p className="mt-[2cqh] text-[min(2vw,5.5cqh)] text-white/75">
+                {isIqamah
+                  ? "Luruskan dan rapatkan shaf"
+                  : `Adzan ${name} pukul ${formatClock(phase.end, tz).slice(0, 5)}`}
+              </p>
+              {officersLine && <p className="mt-[1cqh] text-[min(1.9vw,5cqh)] text-amber-100">{officersLine}</p>}
+              {people && isJumat(phase.key, phase.date) && (
+                <p className="mt-[1cqh] text-[min(1.9vw,5cqh)] text-amber-100">{people}</p>
+              )}
+              {ramadan && (
+                <p className="mt-[1.5cqh] text-[min(1.8vw,4.8cqh)] text-amber-200">
+                  Ramadhan · Imsak {ramadan.imsak.time} ({formatDuration(ramadan.imsak.at - now)}) · Berbuka{" "}
+                  {ramadan.berbuka.time} ({formatDuration(ramadan.berbuka.at - now)})
+                </p>
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -347,6 +437,30 @@ export function MosqueDisplay() {
       <footer className="relative overflow-hidden border-t border-white/10 bg-emerald-950/80 py-[1.4vh]">
         <RunningText items={runningItems} />
       </footer>
+
+      {/* Night: dimmed screen with a small clock that drifts to avoid burn-in */}
+      <AnimatePresence>
+        {night && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            // Fade in slowly at night, but wake up quickly when the mouse moves.
+            exit={{ opacity: 0, transition: { duration: 0.6 } }}
+            transition={{ duration: 2 }}
+            className="absolute inset-0 z-20 bg-black"
+          >
+            <div
+              className="absolute text-center text-white/45 transition-all duration-[3000ms]"
+              style={NIGHT_SPOTS[Math.floor(now / 60_000) % NIGHT_SPOTS.length]}
+            >
+              <p className="font-mono text-[min(7vw,12vh)] leading-none font-bold tabular-nums">{clock.slice(0, 5)}</p>
+              <p className="mt-[1vh] text-[min(1.6vw,2.8vh)]">
+                Subuh {formatClock(phase.end, tz).slice(0, 5)} · {settings.mosqueName || "Jadwal Shalat"}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Friday: "Ibadah Shalat Jumat" replaces the iqamah countdown and the prayer screen */}
       <IbadahJumatScreen
@@ -419,6 +533,7 @@ export function MosqueDisplay() {
           ramadanNow={isRamadan("auto", now, tz)}
           backup={{ city, soundOn }}
           onRestore={restoreBackup}
+          today={today}
         />
         <span className="mx-1 h-6 w-px bg-white/15" />
         <Button

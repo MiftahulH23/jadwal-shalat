@@ -6,7 +6,7 @@ import type { AdzanAlert } from "@/components/prayer/adzan-modal"
 import { playBeeps, stopBeeps } from "@/lib/beep"
 import { formatClock, ZONE_TIMEZONES } from "@/lib/format"
 import { isFriday, isJumat, locationLabel, prayerLabel, type City, type PrayerKey, type PrayerPhase, type WeekSchedule } from "@/lib/prayer"
-import type { Settings } from "@/lib/settings"
+import { jumatOfficers, type Settings } from "@/lib/settings"
 
 type Options = {
   week: WeekSchedule | null
@@ -36,7 +36,7 @@ export function useAdzanAlerts({ week, now, phase, city, locationKey, settings, 
   const location = locationOverride || (week ? locationLabel(city, week) : "")
   const timeOf = (key: PrayerKey, date: string) => week?.days.find((d) => d.date === date)?.[key] ?? ""
   const jumatOf = (key: PrayerKey, date: string) =>
-    isJumat(key, date) ? { khatib: settings.jumat.khatib, imam: settings.jumat.imam } : undefined
+    isJumat(key, date) ? jumatOfficers(settings, date) : undefined
 
   // Adzan just happened: we're in the iqamah countdown of that prayer.
   // Iqamah just happened: we're waiting for the next prayer, right after `prev`'s iqamah.

@@ -81,7 +81,8 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Berisi semua pengaturan (iqamah, koreksi, Ramadhan, Jumat, layar & alamat), kota, dan status suara.
+          Berisi semua pengaturan (iqamah, koreksi, Ramadhan, Jumat, petugas, pengajian, kas, layar & alamat),
+          kota, dan status suara.
           {unsaved && <span className="text-gold"> Termasuk perubahan yang belum Anda simpan.</span>}
         </p>
       </section>

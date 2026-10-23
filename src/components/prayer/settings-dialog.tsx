@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { InfoIcon, MinusIcon, PlusIcon, RotateCcwIcon, Settings2Icon } from "lucide-react"
+import { InfoIcon, RotateCcwIcon, Settings2Icon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { BackupPanel } from "@/components/prayer/backup-panel"
+import { Row, Stepper } from "@/components/prayer/settings-fields"
+import {
+  JumatScheduleSection,
+  KajianSection,
+  KasSection,
+  NightSection,
+  PetugasSection,
+} from "@/components/prayer/settings-sections"
 import { cn } from "@/lib/utils"
 import { locationLabel, PRAYER_KEYS, TIME_KEYS, TIME_LABELS } from "@/lib/prayer"
 import { DEFAULT_SETTINGS, normalizeSettings, splitRunningText, type RamadanMode, type Settings } from "@/lib/settings"
@@ -33,56 +41,8 @@ type Props = {
   onRestore: (backup: ReturnType<typeof parseBackup>) => void
   /** Whether today counts as Ramadan, shown next to the "auto" option. */
   ramadanNow: boolean
-}
-
-function Stepper({
-  value,
-  onChange,
-  min,
-  max,
-  suffix,
-  signed,
-}: {
-  value: number
-  onChange: (v: number) => void
-  min: number
-  max: number
-  suffix: string
-  signed?: boolean
-}) {
-  const set = (v: number) => onChange(Math.min(max, Math.max(min, v)))
-  return (
-    <div className="flex items-center gap-1">
-      <Button variant="outline" size="icon" className="size-8 rounded-full" onClick={() => set(value - 1)} disabled={value <= min} aria-label="Kurangi">
-        <MinusIcon />
-      </Button>
-      <span
-        className={cn(
-          "w-20 text-center font-mono text-sm tabular-nums",
-          signed && value > 0 && "text-primary",
-          signed && value < 0 && "text-gold"
-        )}
-      >
-        {signed && value > 0 ? "+" : ""}
-        {value} {suffix}
-      </span>
-      <Button variant="outline" size="icon" className="size-8 rounded-full" onClick={() => set(value + 1)} disabled={value >= max} aria-label="Tambah">
-        <PlusIcon />
-      </Button>
-    </div>
-  )
-}
-
-function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border bg-card/60 px-3 py-2">
-      <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
-      </div>
-      {children}
-    </div>
-  )
+  /** Today in the city (YYYY-MM-DD), to list the coming Fridays. */
+  today: string
 }
 
 const RAMADAN_OPTIONS: { value: RamadanMode; label: string }[] = [
@@ -91,7 +51,7 @@ const RAMADAN_OPTIONS: { value: RamadanMode; label: string }[] = [
   { value: "off", label: "Nonaktif" },
 ]
 
-export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore }: Props) {
+export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore, today }: Props) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(settings)
 
@@ -128,18 +88,21 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
         <TooltipContent>Pengaturan</TooltipContent>
       </Tooltip>
 
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-x-hidden overflow-y-auto sm:max-w-lg [&>*]:min-w-0">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-x-hidden overflow-y-auto sm:max-w-xl [&>*]:min-w-0">
         <DialogHeader>
           <DialogTitle>Pengaturan</DialogTitle>
           <DialogDescription>Disimpan di browser perangkat ini, tanpa akun atau database.</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="iqamah" className="gap-4">
-          <TabsList className="grid w-full grid-cols-3 group-data-horizontal/tabs:h-auto sm:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-3 group-data-horizontal/tabs:h-auto sm:grid-cols-5">
             <TabsTrigger value="iqamah">Iqamah</TabsTrigger>
             <TabsTrigger value="koreksi">Koreksi</TabsTrigger>
             <TabsTrigger value="ramadhan">Ramadhan</TabsTrigger>
             <TabsTrigger value="jumat">Jumat</TabsTrigger>
+            <TabsTrigger value="petugas">Petugas</TabsTrigger>
+            <TabsTrigger value="kajian">Pengajian</TabsTrigger>
+            <TabsTrigger value="kas">Kas</TabsTrigger>
             <TabsTrigger value="layar">Layar</TabsTrigger>
             <TabsTrigger value="cadangan">Cadangan</TabsTrigger>
           </TabsList>
@@ -207,8 +170,8 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
 
           <TabsContent value="jumat" className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Pada hari Jumat, setelah adzan Jumat tampil hitung mundur khutbah (bukan iqamah biasa), lalu iqamah
-              dan layar &quot;sedang shalat&quot;.
+              Pada hari Jumat, setelah adzan Jumat layar masjid menampilkan &quot;Ibadah Shalat Jumat sedang
+              berlangsung&quot; selama khutbah sampai shalat selesai.
             </p>
             <Row label="Durasi khutbah" hint="Dari adzan Jumat sampai iqamah">
               <Stepper
@@ -220,7 +183,7 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
               />
             </Row>
             <label className="block space-y-1.5">
-              <span className="text-sm font-medium">Nama khatib (opsional)</span>
+              <span className="text-sm font-medium">Khatib bawaan (opsional)</span>
               <Input
                 value={draft.jumat.khatib}
                 maxLength={80}
@@ -229,7 +192,7 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-sm font-medium">Nama imam (opsional)</span>
+              <span className="text-sm font-medium">Imam Jumat bawaan (opsional)</span>
               <Input
                 value={draft.jumat.imam}
                 maxLength={80}
@@ -237,7 +200,19 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
                 onChange={(e) => setDraft({ ...draft, jumat: { ...draft.jumat, imam: e.target.value } })}
               />
             </label>
-            <p className="text-xs text-muted-foreground">Nama khatib &amp; imam tampil di layar masjid pada hari Jumat.</p>
+            <JumatScheduleSection draft={draft} setDraft={setDraft} today={today} />
+          </TabsContent>
+
+          <TabsContent value="petugas">
+            <PetugasSection draft={draft} setDraft={setDraft} />
+          </TabsContent>
+
+          <TabsContent value="kajian">
+            <KajianSection draft={draft} setDraft={setDraft} />
+          </TabsContent>
+
+          <TabsContent value="kas">
+            <KasSection draft={draft} setDraft={setDraft} />
           </TabsContent>
 
           <TabsContent value="layar" className="space-y-3">
@@ -298,6 +273,7 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
                 </div>
               </div>
             )}
+            <NightSection draft={draft} setDraft={setDraft} />
             <Row label={`Layar "sedang shalat"`} hint="Lama tampil setelah iqamah (0 = tidak)">
               <Stepper
                 value={draft.prayingMinutes}

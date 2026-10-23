@@ -17,8 +17,8 @@ Buka http://localhost:3000.
 
 ## Halaman
 
-- `/`: jadwal sepekan, hitung mundur, pop-up adzan/iqamah, mode Ramadhan, mode Jumat (khutbah)
-- `/layar`: mode layar masjid/TV (layar penuh, layar tetap menyala, teks berjalan, layar "shalat sedang berlangsung")
+- `/`: jadwal sepekan, hitung mundur, pop-up adzan/iqamah, mode Ramadhan, mode Jumat, jadwal pengajian
+- `/layar`: mode layar masjid/TV: layar penuh, layar tetap menyala, teks berjalan, layar "shalat sedang berlangsung", ibadah shalat Jumat, slide bergantian (kas masjid, petugas shalat, jadwal pengajian), dan layar redup otomatis di malam hari
 - `/bulanan`: jadwal sebulan, cetak, unduh PDF/CSV
 
 ## Offline

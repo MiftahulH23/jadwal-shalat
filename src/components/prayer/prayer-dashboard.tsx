@@ -7,6 +7,7 @@ import {
   BellIcon,
   BellOffIcon,
   CalendarDaysIcon,
+  BookOpenIcon,
   CalendarRangeIcon,
   ChevronRightIcon,
   MonitorIcon,
@@ -24,6 +25,7 @@ import { AdzanModal } from "@/components/prayer/adzan-modal"
 import { CountdownHero } from "@/components/prayer/countdown-hero"
 import { DayTimes } from "@/components/prayer/day-times"
 import { IbadahJumatScreen, jumatPeople } from "@/components/prayer/ibadah-jumat-screen"
+import { KajianList } from "@/components/prayer/kajian-list"
 import { OfflineNotice } from "@/components/prayer/offline-notice"
 import { RamadanCard } from "@/components/prayer/ramadan-card"
 import { SettingsDialog } from "@/components/prayer/settings-dialog"
@@ -39,7 +41,7 @@ import { SOUND_KEY, useSchedule } from "@/hooks/use-schedule"
 import { playBeeps } from "@/lib/beep"
 import { formatClock, formatScheduleDate, ZONE_TIMEZONES } from "@/lib/format"
 import type { parseBackup } from "@/lib/backup"
-import { isRamadan } from "@/lib/settings"
+import { isRamadan, jumatOfficers } from "@/lib/settings"
 import { cn } from "@/lib/utils"
 import {
   dateAtOffset,
@@ -151,6 +153,7 @@ export function PrayerDashboard() {
           ramadanNow={ramadanAuto}
           backup={{ city, soundOn }}
           onRestore={restoreBackup}
+          today={today ?? ""}
         />
             <ThemeToggle />
           </div>
@@ -179,7 +182,7 @@ export function PrayerDashboard() {
 
             {ramadan && <RamadanCard week={week} now={now} today={today} />}
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <QuickLink
                 href="/layar"
                 icon={MonitorIcon}
@@ -252,6 +255,13 @@ export function PrayerDashboard() {
               />
             </section>
 
+            {settings.kajian.length > 0 && (
+              <section className="space-y-4">
+                <SectionTitle icon={BookOpenIcon} title="Jadwal pengajian" subtitle="Kajian rutin di masjid" />
+                <KajianList kajian={settings.kajian} weekday={new Date(`${today}T00:00:00Z`).getUTCDay()} />
+              </section>
+            )}
+
             <section className="space-y-4">
               <SectionTitle
                 icon={CalendarRangeIcon}
@@ -299,7 +309,7 @@ export function PrayerDashboard() {
         show={Boolean(jumatPreview)}
         clock={now ? formatClock(now, tz).slice(0, 5) : ""}
         iqamahTime={jumatPreview ? formatClock(jumatPreview.iqamahAt, tz).slice(0, 5) : undefined}
-        people={jumatPeople(settings.jumat)}
+        people={jumatPeople(jumatOfficers(settings, week?.days.find((d) => isFriday(d.date))?.date ?? ""))}
         preview
         onClose={dismissJumatPreview}
         className="fixed inset-0 z-90"
@@ -326,7 +336,7 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm backdrop-blur transition-all outline-none hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group flex min-w-0 items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm backdrop-blur transition-all outline-none hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110 group-hover:-rotate-6">
         <Icon className="size-6" />

@@ -90,6 +90,8 @@
 }
 
 .dark {
+  /* Native controls (dropdown lists, scrollbars) follow the dark theme too. */
+  color-scheme: dark;
   --background: oklch(0.16 0.025 190);
   --foreground: oklch(0.96 0.01 160);
   --card: oklch(0.21 0.03 185 / 72%);
