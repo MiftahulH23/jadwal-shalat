@@ -81,6 +81,24 @@ function AdzanCard({
   const [paused, setPaused] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
   const elapsed = useRef(0)
+  const cardRef = useRef<HTMLDivElement>(null)
+  // Zoom actually applied: the wanted `scale`, reduced if needed so the whole card fits the
+  // screen height (no scrollbar), e.g. the taller Jumat pop-up on a short TV.
+  const [zoom, setZoom] = useState(scale)
+
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    // scrollHeight is in the card's own (unzoomed) CSS pixels, so it is the natural height.
+    const fit = () => setZoom(Math.min(scale, (window.innerHeight - 32) / el.scrollHeight))
+    const observer = new ResizeObserver(fit)
+    observer.observe(el)
+    window.addEventListener("resize", fit)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", fit)
+    }
+  }, [scale])
 
   // Auto-close timer that pauses while the pointer or focus is on the card.
   useEffect(() => {
@@ -121,9 +139,9 @@ function AdzanCard({
       />
 
       <motion.div
+        ref={cardRef}
         role="alertdialog"
-        // `zoom` scales layout too; shrink max height to match so it still fits the screen.
-        style={scale !== 1 ? { zoom: scale, maxHeight: `calc((100dvh - 2rem) / ${scale})` } : undefined}
+        style={zoom !== 1 ? { zoom } : undefined}
         aria-modal="true"
         aria-labelledby="adzan-title"
         aria-describedby="adzan-desc"
@@ -134,7 +152,7 @@ function AdzanCard({
         onPointerEnter={(e) => e.pointerType === "mouse" && setPaused(true)}
         onPointerLeave={() => setPaused(false)}
         className={cn(
-          "relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-x-hidden overflow-y-auto rounded-[2rem] bg-linear-to-b text-center text-white shadow-2xl ring-1 shadow-emerald-950/60 ring-white/15",
+          "relative w-full max-w-md overflow-hidden rounded-[2rem] bg-linear-to-b text-center text-white shadow-2xl ring-1 shadow-emerald-950/60 ring-white/15",
           isIqamah ? "from-amber-700 via-emerald-900 to-teal-950" : "from-emerald-700 via-emerald-900 to-teal-950"
         )}
       >

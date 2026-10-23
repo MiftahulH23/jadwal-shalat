@@ -27,21 +27,22 @@ export function availableSlides(settings: Settings): TvSlide[] {
   return slides
 }
 
+/** Heights use cqh (the middle area of the mosque display is a size container), so slides always fit above the time board. */
 function SlideFrame({ icon: Icon, title, subtitle, children }: { icon: LucideIcon; title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="w-[min(80vw,150vh)]">
-      <div className="mb-[1.8vh] flex items-end justify-between gap-[2vw]">
-        <p className="flex items-center gap-[1vw] text-[min(2.6vw,4.4vh)] font-bold">
+    <div className="w-[min(90vw,330cqh)]">
+      <div className="mb-[2.9cqh] flex items-end justify-between gap-[2vw]">
+        <p className="flex items-center gap-[1vw] text-[min(2.6vw,7cqh)] font-bold">
           <Icon className="size-[1.1em] text-amber-300" /> {title}
         </p>
-        {subtitle && <p className="text-[min(1.8vw,3vh)] text-emerald-100/70">{subtitle}</p>}
+        {subtitle && <p className="text-[min(1.8vw,4.8cqh)] text-emerald-100/70">{subtitle}</p>}
       </div>
       {children}
     </div>
   )
 }
 
-const cell = "rounded-[1vw] border border-white/10 bg-white/[0.05] px-[1.5vw] py-[1.2vh]"
+const cell = "rounded-[1vw] border border-white/10 bg-white/[0.05] px-[1.5vw] py-[1.9cqh]"
 
 export function KasSlide({ kas }: { kas: Settings["kas"] }) {
   const rows = [
@@ -54,17 +55,17 @@ export function KasSlide({ kas }: { kas: Settings["kas"] }) {
       <div className="grid grid-cols-3 gap-[1vw]">
         {rows.map((r) => (
           <div key={r.label} className={cell}>
-            <p className="text-[min(1.7vw,2.9vh)] text-white/60">{r.label}</p>
-            <p className={cn("font-mono text-[min(2.6vw,4.4vh)] font-semibold tabular-nums", r.tone)}>
+            <p className="text-[min(1.7vw,4.6cqh)] text-white/60">{r.label}</p>
+            <p className={cn("font-mono text-[min(2.6vw,7cqh)] font-semibold tabular-nums", r.tone)}>
               {r.label === "Pengeluaran" && r.value ? "−" : ""}
               {formatRupiah(r.value)}
             </p>
           </div>
         ))}
       </div>
-      <div className="mt-[1.2vh] flex items-center justify-between rounded-[1vw] border border-amber-300/40 bg-amber-400/15 px-[2vw] py-[1.4vh]">
-        <p className="text-[min(2.4vw,4vh)] font-semibold">Saldo akhir</p>
-        <p className="font-mono text-[min(4.2vw,7vh)] font-bold text-amber-200 tabular-nums">{formatRupiah(kasBalance(kas))}</p>
+      <div className="mt-[1.9cqh] flex items-center justify-between rounded-[1vw] border border-amber-300/40 bg-amber-400/15 px-[2vw] py-[2.2cqh]">
+        <p className="text-[min(2.4vw,6.4cqh)] font-semibold">Saldo akhir</p>
+        <p className="font-mono text-[min(4.2vw,11.2cqh)] font-bold text-amber-200 tabular-nums">{formatRupiah(kasBalance(kas))}</p>
       </div>
     </SlideFrame>
   )
@@ -89,11 +90,11 @@ export function PetugasSlide({
           const second = isJumatSlot ? { label: "Khatib", name: jumat.khatib } : { label: "Muadzin", name: petugas[key].muadzin }
           return (
             <div key={key} className={cn(cell, "text-center")}>
-              <p className="text-[min(2.2vw,3.8vh)] font-bold text-amber-200">{prayerLabel(key, date)}</p>
-              <p className="mt-[1.2vh] text-[min(1.4vw,2.4vh)] text-white/50">Imam</p>
-              <p className="text-[min(1.8vw,3vh)] font-medium">{imam || "–"}</p>
-              <p className="mt-[1vh] text-[min(1.4vw,2.4vh)] text-white/50">{second.label}</p>
-              <p className="text-[min(1.8vw,3vh)] font-medium">{second.name || "–"}</p>
+              <p className="text-[min(2.2vw,6.1cqh)] font-bold text-amber-200">{prayerLabel(key, date)}</p>
+              <p className="mt-[1.9cqh] text-[min(1.4vw,3.8cqh)] text-white/50">Imam</p>
+              <p className="line-clamp-2 text-[min(1.8vw,4.8cqh)] leading-tight font-medium">{imam || "–"}</p>
+              <p className="mt-[1.6cqh] text-[min(1.4vw,3.8cqh)] text-white/50">{second.label}</p>
+              <p className="line-clamp-2 text-[min(1.8vw,4.8cqh)] leading-tight font-medium">{second.name || "–"}</p>
             </div>
           )
         })}
@@ -121,18 +122,18 @@ export function KajianSlide({ kajian, weekday }: { kajian: Settings["kajian"]; w
           return (
             <div key={k.id} className={cn(cell, wide && "col-span-2", today && "border-amber-300/50 bg-amber-400/15")}>
               <div className="flex items-center justify-between gap-[1vw]">
-                <p className="text-[min(1.5vw,2.5vh)] font-semibold text-amber-200">
+                <p className="text-[min(1.5vw,4cqh)] font-semibold text-amber-200">
                   {kajianDayLabel(k.day)}
                   {k.time && ` · ${k.time}`}
                 </p>
                 {today && (
-                  <span className="rounded-full bg-amber-400 px-[0.8vw] py-[0.2vh] text-[min(1.2vw,2vh)] font-bold text-emerald-950">
+                  <span className="rounded-full bg-amber-400 px-[0.8vw] py-[0.3cqh] text-[min(1.2vw,3.2cqh)] font-bold text-emerald-950">
                     HARI INI
                   </span>
                 )}
               </div>
-              <p className="mt-[0.4vh] truncate text-[min(1.9vw,3.2vh)] font-bold">{k.title || "Kajian"}</p>
-              {k.ustadz && <p className="truncate text-[min(1.5vw,2.6vh)] text-white/70">{k.ustadz}</p>}
+              <p className="mt-[0.6cqh] truncate text-[min(1.9vw,5.1cqh)] font-bold">{k.title || "Kajian"}</p>
+              {k.ustadz && <p className="truncate text-[min(1.5vw,4.2cqh)] text-white/70">{k.ustadz}</p>}
             </div>
           )
         })}

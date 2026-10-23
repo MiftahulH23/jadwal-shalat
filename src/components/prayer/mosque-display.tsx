@@ -346,7 +346,7 @@ export function MosqueDisplay() {
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center"
             >
-              <p className="mb-[2.5vh] inline-flex items-center gap-[0.6vw] rounded-full bg-white/10 px-[1.5vw] py-[0.6vh] text-[min(1.8vw,3vh)] text-emerald-100">
+              <p className="mb-[3cqh] inline-flex items-center gap-[0.6vw] rounded-full bg-white/10 px-[1.5vw] py-[1cqh] text-[min(1.8vw,4.6cqh)] text-emerald-100">
                 <ClockIcon className="size-[1em]" /> Menuju {name}
                 <span className="font-mono font-semibold tabular-nums">{formatDuration(phase.end - now)}</span>
               </p>
