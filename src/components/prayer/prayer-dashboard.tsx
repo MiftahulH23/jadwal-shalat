@@ -208,7 +208,8 @@ export function PrayerDashboard() {
                   year: "numeric",
                 })}
               />
-              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" role="tablist">
+              {/* Seven equal columns across the full width. */}
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2" role="tablist">
                 {week.days.map((day) => {
                   const active = day.date === selectedDay.date
                   return (
@@ -218,7 +219,7 @@ export function PrayerDashboard() {
                       aria-selected={active}
                       onClick={() => setSelected(day.date)}
                       className={cn(
-                        "relative flex min-w-16 shrink-0 flex-col items-center rounded-2xl border px-3 py-2 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "relative flex min-w-0 flex-col items-center rounded-2xl border px-1 py-2 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                         active ? "border-transparent text-primary-foreground" : "bg-card hover:bg-accent"
                       )}
                     >
@@ -230,7 +231,15 @@ export function PrayerDashboard() {
                         />
                       )}
                       <span className="relative text-xs opacity-80">
-                        {day.date === today ? "Hari ini" : formatScheduleDate(day.date, { weekday: "short" })}
+                        {day.date === today ? (
+                          <>
+                            {/* Narrow phones: weekday only (the green pill already marks today). */}
+                            <span className="sm:hidden">{formatScheduleDate(day.date, { weekday: "short" })}</span>
+                            <span className="hidden sm:inline">Hari ini</span>
+                          </>
+                        ) : (
+                          formatScheduleDate(day.date, { weekday: "short" })
+                        )}
                       </span>
                       <span className="relative text-lg font-bold">
                         {formatScheduleDate(day.date, { day: "numeric" })}
