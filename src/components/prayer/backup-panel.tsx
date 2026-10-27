@@ -68,6 +68,8 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
       <p className="text-xs text-muted-foreground">
         Simpan pengaturan, kota, dan status suara sebagai cadangan, atau salin ke perangkat lain (misalnya TV
         masjid). Tetap tanpa akun atau database.
+        Pengaturan tersimpan terpisah untuk tiap browser dan tiap alamat website, jadi gunakan cadangan ini juga
+        untuk memindahkannya, misalnya dari localhost ke versi online.
       </p>
 
       <section className="space-y-2">

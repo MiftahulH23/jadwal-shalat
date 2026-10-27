@@ -323,8 +323,8 @@ export function PrayerDashboard() {
         onClose={dismissJumatPreview}
         className="fixed inset-0 z-90"
       />
-      {/* Temporary: remove this line (and simulation-panel.tsx) when no longer needed. */}
-      {phase && (
+      {/* Simulation panel only when enabled in Pengaturan > Layar (hidden from jamaah by default). */}
+      {phase && settings.showSimulation && (
         <SimulationPanel onSimulate={(kind, options) => (options?.jumat ? simulateJumat() : showPreview(kind))} />
       )}
     </div>

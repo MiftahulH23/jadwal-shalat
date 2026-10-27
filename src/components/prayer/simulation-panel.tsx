@@ -11,7 +11,7 @@ type Props = {
   onSimulate: (kind: "adzan" | "iqamah", options?: { jumat?: boolean }) => void
 }
 
-/** Temporary floating panel to preview the adzan / iqamah pop-ups on demand. */
+/** Floating panel to preview the adzan / iqamah / Jumat pop-ups (enabled in Pengaturan > Layar). */
 export function SimulationPanel({ onSimulate }: Props) {
   const [open, setOpen] = useState(true)
 

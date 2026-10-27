@@ -25,6 +25,7 @@ import {
   KajianSection,
   KasSection,
   NightSection,
+  SimulationToggle,
   PetugasSection,
 } from "@/components/prayer/settings-sections"
 import { cn } from "@/lib/utils"
@@ -283,6 +284,7 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
                 onChange={(v) => setDraft({ ...draft, prayingMinutes: v })}
               />
             </Row>
+            <SimulationToggle draft={draft} setDraft={setDraft} />
           </TabsContent>
           <TabsContent value="cadangan">
             <BackupPanel

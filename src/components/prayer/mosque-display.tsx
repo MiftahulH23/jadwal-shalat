@@ -535,28 +535,33 @@ export function MosqueDisplay() {
           onRestore={restoreBackup}
           today={today}
         />
-        <span className="mx-1 h-6 w-px bg-white/15" />
-        <Button
-          variant="ghost"
-          className="gap-2 rounded-full text-emerald-200 hover:bg-emerald-400/15 hover:text-emerald-100"
-          onClick={() => simulate("adzan")}
-        >
-          <MoonStarIcon /> Simulasi adzan
-        </Button>
-        <Button
-          variant="ghost"
-          className="gap-2 rounded-full text-amber-200 hover:bg-amber-400/15 hover:text-amber-100"
-          onClick={() => simulate("iqamah")}
-        >
-          <BellRingIcon /> Simulasi iqamah
-        </Button>
-        <Button
-          variant="ghost"
-          className="gap-2 rounded-full text-teal-200 hover:bg-teal-400/15 hover:text-teal-100"
-          onClick={simulateJumat}
-        >
-          <LandmarkIcon /> Simulasi Jumat
-        </Button>
+        {/* Simulation buttons only when enabled in Pengaturan > Layar */}
+        {settings.showSimulation && (
+          <>
+          <span className="mx-1 h-6 w-px bg-white/15" />
+          <Button
+            variant="ghost"
+            className="gap-2 rounded-full text-emerald-200 hover:bg-emerald-400/15 hover:text-emerald-100"
+            onClick={() => simulate("adzan")}
+          >
+            <MoonStarIcon /> Simulasi adzan
+          </Button>
+          <Button
+            variant="ghost"
+            className="gap-2 rounded-full text-amber-200 hover:bg-amber-400/15 hover:text-amber-100"
+            onClick={() => simulate("iqamah")}
+          >
+            <BellRingIcon /> Simulasi iqamah
+          </Button>
+          <Button
+            variant="ghost"
+            className="gap-2 rounded-full text-teal-200 hover:bg-teal-400/15 hover:text-teal-100"
+            onClick={simulateJumat}
+          >
+            <LandmarkIcon /> Simulasi Jumat
+          </Button>
+          </>
+        )}
         <span className="mx-1 h-6 w-px bg-white/15" />
         <Button
           variant="ghost"

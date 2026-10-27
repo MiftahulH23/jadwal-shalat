@@ -31,6 +31,8 @@ export type Settings = {
   petugas: Record<PrayerKey, { imam: string; muadzin: string }>
   /** Mosque cash report shown on the mosque display. Amounts in rupiah. */
   kas: { enabled: boolean; period: string; lastBalance: number; income: number; expense: number }
+  /** Show the pop-up simulation buttons (for administrators testing the display). */
+  showSimulation: boolean
   /** Mosque display: dim the screen at night, between Isya and Subuh. */
   night: { enabled: boolean; afterIsya: number; beforeSubuh: number }
   /** Recurring study sessions (pengajian / kajian). */
@@ -67,6 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
   kas: { enabled: false, period: "", lastBalance: 0, income: 0, expense: 0 },
   night: { enabled: true, afterIsya: 60, beforeSubuh: 60 },
   kajian: [],
+  showSimulation: false,
 }
 
 export const SETTINGS_KEY = "jadwal-shalat:settings"
@@ -91,6 +94,7 @@ export function normalizeSettings(raw: Partial<Settings> | null | undefined): Se
     mosqueAddress: text(raw?.mosqueAddress, 120),
     runningText: typeof raw?.runningText === "string" ? raw.runningText.slice(0, 500) : d.runningText,
     prayingMinutes: clamp(raw?.prayingMinutes, 0, 60, d.prayingMinutes),
+    showSimulation: raw?.showSimulation === true,
     jumat: {
       khutbahMinutes: clamp(raw?.jumat?.khutbahMinutes, 5, 90, d.jumat.khutbahMinutes),
       khatib: text(raw?.jumat?.khatib, 80),

@@ -197,12 +197,26 @@ export function KajianSection({ draft, setDraft }: SectionProps) {
 
 /** Cash report: last balance, income and expense; closing balance is calculated. */
 export function KasSection({ draft, setDraft }: SectionProps) {
-  const set = (patch: Partial<Settings["kas"]>) => setDraft({ ...draft, kas: { ...draft.kas, ...patch } })
+  const k = draft.kas
+  const hasData = Boolean(k.period || k.lastBalance || k.income || k.expense)
+  const set = (patch: Partial<Settings["kas"]>) => {
+    // Filling in the report for the first time switches it on, so it isn't left hidden by accident.
+    const firstFill = !k.enabled && !hasData && patch.enabled === undefined
+    setDraft({ ...draft, kas: { ...k, ...patch, ...(firstFill && { enabled: true }) } })
+  }
   return (
     <div className="space-y-3">
-      <Row label="Tampilkan di layar masjid" hint="Muncul bergantian dengan hitung mundur">
-        <Switch checked={draft.kas.enabled} onCheckedChange={(enabled) => set({ enabled })} aria-label="Tampilkan info kas" />
+      <Row
+        label="Tampilkan di layar masjid"
+        hint="Muncul setelah 30 detik hitung mundur, bergantian dengan slide lain, selama shalat berikutnya masih lebih dari 15 menit lagi"
+      >
+        <Switch checked={k.enabled} onCheckedChange={(enabled) => set({ enabled })} aria-label="Tampilkan info kas" />
       </Row>
+      {hasData && !k.enabled && (
+        <p className="rounded-lg bg-gold/10 px-3 py-2 text-xs text-gold">
+          Laporan kas sudah diisi tetapi belum ditampilkan. Aktifkan tombol di atas agar muncul di layar masjid.
+        </p>
+      )}
       <Field label="Periode">
         <Input
           value={draft.kas.period}
@@ -231,6 +245,18 @@ export function KasSection({ draft, setDraft }: SectionProps) {
 }
 
 /** Dim the mosque display at night (between Isya and Subuh). */
+export function SimulationToggle({ draft, setDraft }: SectionProps) {
+  return (
+    <Row label="Alat simulasi pop-up" hint="Tampilkan tombol simulasi adzan, iqamah, dan Jumat (untuk pengurus menguji tampilan)">
+      <Switch
+        checked={draft.showSimulation}
+        onCheckedChange={(showSimulation) => setDraft({ ...draft, showSimulation })}
+        aria-label="Alat simulasi pop-up"
+      />
+    </Row>
+  )
+}
+
 export function NightSection({ draft, setDraft }: SectionProps) {
   const set = (patch: Partial<Settings["night"]>) => setDraft({ ...draft, night: { ...draft.night, ...patch } })
   return (
