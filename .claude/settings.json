@@ -1,0 +1,22 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(npm run check)",
+      "Bash(npm run build)",
+      "Bash(npm run shot*)"
+    ],
+    "deny": [
+      "Read(./.next/**)",
+      "Read(./package-lock.json)",
+      "Read(./tsconfig.tsbuildinfo)"
+    ]
+  }
+}

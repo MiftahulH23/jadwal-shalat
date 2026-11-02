@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check": "tsc --noEmit && eslint src scripts",
+    "shot": "node scripts/shot.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -32,6 +34,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
+    "puppeteer-core": "^24.43.1",
     "shadcn": "^4.22.1",
     "tailwindcss": "^4",
     "typescript": "^5"

@@ -41,3 +41,7 @@ Jadwal ±2 bulan (62 hari) diunduh sekaligus dan disimpan di perangkat, jadi API
 ## Catatan keamanan dependency
 
 `npm audit --omit=dev` bersih. Sisa peringatan `braces` hanya ada di alat pengembangan (ESLint, CLI shadcn) dan belum ada versi perbaikan dari pembuatnya.
+
+## Untuk agent AI
+
+Mulai dari `AGENTS.md`. Detail ada di `docs/` dan dibaca sesuai tugas.
