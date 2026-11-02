@@ -15,6 +15,7 @@ const { values: args } = parseArgs({
     size: { type: "string", default: "1920x1080" },
     mobile: { type: "boolean", default: false },
     at: { type: "string" }, // fake clock, e.g. 2026-10-23T11:46:00+07:00
+    skew: { type: "string" }, // make the device clock wrong by N seconds: --skew=-300 (tests clock correction)
     cycle: { type: "string" }, // TV slide cycle length in seconds, used with --offset
     offset: { type: "string" }, // seconds into that cycle
     settings: { type: "string" }, // JSON, or a path to a JSON file
@@ -70,8 +71,14 @@ try {
       }
     },
     readSettings(),
-    fakeTime()
+    fakeTime() ?? (args.skew ? Date.now() + Number(args.skew) * 1000 : null)
   )
+
+  if (args.at) {
+    // Clock correction would undo a fake clock.
+    await page.setRequestInterception(true)
+    page.on("request", (req) => (req.url().includes("/api/waktu") ? req.abort() : req.continue()))
+  }
 
   await page.goto(`${args.base}/${args.page}`, { waitUntil: "networkidle0", timeout: 60_000 })
   await sleep(Number(args.wait))
@@ -96,6 +103,8 @@ try {
     const content = main?.firstElementChild
     const dialog = document.querySelector("[role=alertdialog]")
     return {
+      clockOffsetMs: Number(localStorage.getItem("jadwal-shalat:clock-offset")),
+      shownClock: document.querySelector("header .font-mono")?.textContent,
       pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
       middle:
         location.pathname === "/layar" && content
@@ -107,7 +116,8 @@ try {
       text: (main ?? document.body).innerText.replace(/\s+/g, " ").slice(0, 200),
     }
   })
-  console.log(JSON.stringify({ out: args.out, ...report }, null, 2))
+  const realClock = new Intl.DateTimeFormat("en-GB", { timeStyle: "medium", timeZone: "Asia/Jakarta" }).format(Date.now())
+  console.log(JSON.stringify({ out: args.out, realClockWIB: realClock, ...report }, null, 2))
 } finally {
   await browser.close()
 }

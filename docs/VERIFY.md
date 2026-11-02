@@ -30,9 +30,12 @@ npm run shot -- --page layar --at YYYY-MM-DDT13:00:00+07:00 --cycle 66 --offset 
 
 # Klik tombol lalu screenshot, lebar HP
 npm run shot -- --size 390x844 --mobile --settings '{"showSimulation":true}' --click "Masuk waktu iqamah"
+
+# Jam perangkat meleset 5 menit (menguji koreksi jam); pakai tanda sama dengan untuk nilai negatif
+npm run shot -- --page layar --skew=-300
 ```
 
-Opsi lain: `--base <url>` (default `http://localhost:3123`, bisa produksi), `--wait <ms>`, `--browser <path>`. `--settings` menerima JSON atau path file. Keluaran JSON: `pageOverflow`, `middle` (apakah isi bagian tengah TV muat), `dialog` (apakah pop-up muat), `text`.
+Opsi lain: `--base <url>` (default `http://localhost:3123`, bisa produksi), `--wait <ms>`, `--browser <path>`. `--settings` menerima JSON atau path file. `--at` mematikan koreksi jam agar jam palsunya tidak dibatalkan. Keluaran JSON: `realClockWIB`, `shownClock`, `clockOffsetMs`, `pageOverflow`, `middle` (apakah isi bagian tengah TV muat), `dialog` (apakah pop-up muat), `text`.
 
 Ukuran layar yang sudah pernah bermasalah: TV 1763×844, 1920×1080, 1366×768, 1280×720; HP 390×844, 375×667.
 
@@ -46,6 +49,8 @@ Ukuran layar yang sudah pernah bermasalah: TV 1763×844, 1920×1080, 1366×768, 
 - `next dev` tidak bisa jalan dua kali di folder yang sama. Pengguna sering memakai port 3000; pakai `next start -p 3123` untuk tes.
 - Server dev yang lama bisa menyajikan CSS usang. Kalau tampilan aneh, bandingkan dengan build produksi.
 - Service worker hanya aktif di produksi.
+- Server `next start` lama yang masih hidup setelah build ulang menyajikan 404 untuk rute baru dan halaman kosong. Matikan dulu lewat PowerShell (`Get-NetTCPConnection -LocalPort 3123 -State Listen`), pastikan portnya kosong.
+- Di localhost, server memakai jam komputer yang sama, jadi koreksi jam selalu mendekati 0. Pakai `--skew` atau uji di produksi.
 
 **Pengujian**
 - `--at` hanya berlaku untuk 60 hari ke depan, karena server mengirim jadwal mulai hari ini sebenarnya.

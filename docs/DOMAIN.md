@@ -20,7 +20,11 @@ Ufuk = −(0,8333° + 0,0347° × √ketinggian meter). Tanpa data ketinggian (o
 
 ## Zona waktu
 
-Ditentukan dari provinsi (`zoneForRegion`), bukan zona perangkat: WIT = Papua, Maluku. WITA = Bali, Nusa Tenggara, Sulawesi, Gorontalo, Kalimantan Selatan/Timur/Utara. Sisanya WIB. Hitung mundur memakai jam perangkat; belum ada koreksi kalau jam itu salah.
+Ditentukan dari provinsi (`zoneForRegion`), bukan zona perangkat: WIT = Papua, Maluku. WITA = Bali, Nusa Tenggara, Sulawesi, Gorontalo, Kalimantan Selatan/Timur/Utara. Sisanya WIB.
+
+## Sumber jam
+
+Jam perangkat bisa meleset (laptop pemilik pernah tertinggal 24 detik), padahal adzan dan iqamah mengikutinya. Karena itu kode browser memakai `correctedNow()` dari `lib/clock.ts`, **jangan `Date.now()` langsung**. Selisih dengan jam server (`/api/waktu`) diukur saat halaman dibuka, tiap 30 menit, saat tab kembali aktif, dan saat internet kembali. Selisihnya disimpan, jadi tetap dipakai saat offline. Kalau belum pernah berhasil sinkron, jam perangkat dipakai apa adanya.
 
 ## Fase hitung mundur (`getPrayerPhase`)
 

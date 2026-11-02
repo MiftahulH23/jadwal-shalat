@@ -4,7 +4,7 @@ Urutan sesuai saran terakhir; prioritas akhir ditentukan pemilik.
 
 ## Berikutnya: keandalan
 
-- [ ] Peringatan atau koreksi kalau jam perangkat meleset (bandingkan dengan jam server saat online)
+- [x] Koreksi otomatis kalau jam perangkat meleset
 - [ ] Pesan "Klik sekali untuk mengaktifkan suara" di layar TV selama audio masih diblokir
 - [ ] Tes otomatis logika waktu: fase adzan/iqamah, Jumat, pergantian bulan, zona waktu, layar malam, aturan refresh
 

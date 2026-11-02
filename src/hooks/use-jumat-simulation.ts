@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react"
 
+import { correctedNow } from "@/lib/clock"
+
 const SCREEN_MS = 15_000
 
 type Options = {
@@ -28,7 +30,7 @@ export function useJumatSimulation({ now, khutbahMinutes, simulate, close }: Opt
   // Wraps the pop-up's close: closing the simulated Jumat pop-up reveals the screen.
   const closeAlert = useCallback(() => {
     close()
-    setSim((s) => (s && !s.screenUntil ? { ...s, screenUntil: Date.now() + SCREEN_MS } : s))
+    setSim((s) => (s && !s.screenUntil ? { ...s, screenUntil: correctedNow() + SCREEN_MS } : s))
   }, [close])
 
   const dismiss = useCallback(() => setSim(null), [])

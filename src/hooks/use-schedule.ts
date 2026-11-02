@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { usePersistedState } from "@/hooks/use-persisted-state"
+import { correctedNow } from "@/lib/clock"
 import { loadOfflineSchedule, needsRefresh, OFFLINE_DAYS, readCache, saveSchedule } from "@/lib/offline"
 import { addDays, dateAtOffset, toEpoch, type City, type WeekSchedule } from "@/lib/prayer"
 import { applyCorrections, normalizeSettings, SETTINGS_KEY, type Settings } from "@/lib/settings"
@@ -65,7 +66,7 @@ export function useSchedule() {
       setOffline(status)
       setSavedAt(downloadedAt ?? null)
       setRawWeek(data)
-      setToday(dateAtOffset(Date.now(), data.utcOffset))
+      setToday(dateAtOffset(correctedNow(), data.utcOffset))
     }
 
     const load = async () => {
@@ -84,7 +85,7 @@ export function useSchedule() {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? "Gagal memuat jadwal")
         saveSchedule(locationKey, data as WeekSchedule)
-        show(data as WeekSchedule, null, Date.now())
+        show(data as WeekSchedule, null, correctedNow())
       } catch (err) {
         if ((err as Error).name === "AbortError") return
         // No connection (or the source is down): fall back to what's on the device.
@@ -122,8 +123,8 @@ export function useSchedule() {
   // Just after the city's local midnight: move "today" forward and refresh.
   useEffect(() => {
     if (!rawWeek) return
-    const tomorrow = addDays(dateAtOffset(Date.now(), rawWeek.utcOffset), 1)
-    const delay = toEpoch(tomorrow, "00:00", rawWeek.utcOffset) - Date.now() + 2_000
+    const tomorrow = addDays(dateAtOffset(correctedNow(), rawWeek.utcOffset), 1)
+    const delay = toEpoch(tomorrow, "00:00", rawWeek.utcOffset) - correctedNow() + 2_000
     const timer = setTimeout(() => {
       setToday(tomorrow)
       setReloadKey((k) => k + 1)

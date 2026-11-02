@@ -29,6 +29,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state"
 import { usePhaseBeeps } from "@/hooks/use-phase-beeps"
 import { SOUND_KEY, useSchedule } from "@/hooks/use-schedule"
 import { playBeeps } from "@/lib/beep"
+import { correctedNow } from "@/lib/clock"
 import { formatClock, formatHijri, formatLongDate, ZONE_TIMEZONES } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import {
@@ -288,7 +289,7 @@ export function MosqueDisplay() {
     <div
       onPointerMove={() => {
         pokeControls()
-        setWakeUntil(Date.now() + 60_000)
+        setWakeUntil(correctedNow() + 60_000)
       }}
       className={cn(
         "relative flex h-dvh flex-col overflow-hidden bg-[#04110f] text-white select-none",

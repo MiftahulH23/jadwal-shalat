@@ -15,6 +15,7 @@ Keputusan pemilik proyek dan alasannya. Jangan membaliknya tanpa bertanya.
 | Pengajian tunggal atau item ganjil terakhir selebar penuh | Permintaan pemilik |
 | Baris tanggal harian 7 kolom selebar penuh | Permintaan pemilik |
 | Kode dihitung sendiri (`astronomy.ts`), bukan library `adhan` | Butuh koreksi ketinggian dan parameter Kemenag; library tidak menyediakannya |
+| Jam dikoreksi otomatis ke jam server | Laptop pemilik tertinggal beberapa detik dari HP; adzan ikut terlambat |
 | Slide dihitung dari jam, bukan timer | Beberapa layar tetap serempak dan tidak perlu state |
 
 ## Preferensi kerja pemilik

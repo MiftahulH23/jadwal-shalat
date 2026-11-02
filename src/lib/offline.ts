@@ -3,6 +3,7 @@
 // calculated locally when the stored copy runs out.
 
 import { calculateWeek } from "@/lib/astronomy"
+import { correctedNow } from "@/lib/clock"
 import { dateAtOffset, type City, type WeekSchedule } from "@/lib/prayer"
 
 const CACHE_KEY = "jadwal-shalat:cache"
@@ -17,7 +18,7 @@ export type CachedSchedule = { locationKey: string; savedAt: number; data: WeekS
 
 export function saveSchedule(locationKey: string, data: WeekSchedule) {
   try {
-    const entry: CachedSchedule = { locationKey, savedAt: Date.now(), data }
+    const entry: CachedSchedule = { locationKey, savedAt: correctedNow(), data }
     localStorage.setItem(CACHE_KEY, JSON.stringify(entry))
   } catch {
     // Storage full or blocked: offline fallback just won't be available.
@@ -37,7 +38,7 @@ export function readCache(locationKey: string): CachedSchedule | null {
  * Whether to contact the API: only once per calendar month (to pick up any updates),
  * or earlier if the stored copy is about to run out.
  */
-export function needsRefresh(cached: CachedSchedule, now = Date.now()) {
+export function needsRefresh(cached: CachedSchedule, now = correctedNow()) {
   const { utcOffset, days } = cached.data
   const today = dateAtOffset(now, utcOffset)
   const savedMonth = dateAtOffset(cached.savedAt, utcOffset).slice(0, 7)
@@ -63,7 +64,7 @@ export type OfflineSchedule = {
  * Best available schedule without network: the stored copy while it still covers
  * today, otherwise (for GPS locations) a locally calculated one.
  */
-export function loadOfflineSchedule(city: City, locationKey: string, now = Date.now()): OfflineSchedule | null {
+export function loadOfflineSchedule(city: City, locationKey: string, now = correctedNow()): OfflineSchedule | null {
   const cached = readCache(locationKey)
   if (cached) {
     const today = dateAtOffset(now, cached.data.utcOffset)

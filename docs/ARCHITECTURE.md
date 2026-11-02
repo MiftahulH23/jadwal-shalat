@@ -8,6 +8,7 @@
 | `/layar` | Layar TV masjid | `mosque-display.tsx` |
 | `/bulanan` | Jadwal sebulan, cetak, PDF, CSV (masih butuh internet) | `monthly-schedule.tsx` |
 | `/api/kota` | Daftar kota | `lib/myquran.ts` |
+| `/api/waktu` | Jam server, untuk koreksi jam perangkat | `lib/clock.ts` |
 | `/api/jadwal/[id]?hari=&lat=&lng=` | Jadwal 1–62 hari | `lib/myquran.ts` |
 | `/api/jadwal/[id]/bulan?tahun=&bulan=&lat=&lng=` | Jadwal sebulan | `lib/myquran.ts` |
 
@@ -27,6 +28,7 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 **`lib/`** (logika tanpa React)
 - `prayer.ts`: tipe, zona waktu, `getPrayerPhase`, `isJumat`, label, `locationLabel`
 - `settings.ts`: tipe `Settings`, default, `normalizeSettings`, koreksi, Ramadhan, kas, helper kajian
+- `clock.ts`: `correctedNow()`, jam perangkat yang dikoreksi ke jam server
 - `astronomy.ts`: hitung waktu dari koordinat
 - `myquran.ts`: fetch API di server (`server-only`, `use cache`), elevasi Open-Meteo
 - `offline.ts`: simpan dan baca jadwal, aturan refresh bulanan
@@ -56,4 +58,4 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 
 ## Kunci localStorage
 
-`jadwal-shalat:city`, `:sound` (default hidup), `:settings`, `:cache`
+`jadwal-shalat:city`, `:sound` (default hidup), `:settings`, `:cache`, `:clock-offset`
