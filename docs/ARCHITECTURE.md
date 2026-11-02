@@ -32,12 +32,14 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 - `astronomy.ts`: hitung waktu dari koordinat
 - `myquran.ts`: fetch API di server (`server-only`, `use cache`), elevasi Open-Meteo
 - `offline.ts`: simpan dan baca jadwal, aturan refresh bulanan
+- `background.ts`: foto latar TV: kompresi di browser, simpan di IndexedDB, konversi untuk cadangan
 - `ramadan.ts`, `beep.ts`, `export.ts` (PDF/CSV), `backup.ts` (kode `JS1-`/file), `format.ts`
 
 **`hooks/`**
 - `use-schedule.ts`: kota, pengaturan, jadwal, status offline
 - `use-persisted-state.ts`: localStorage lewat `useSyncExternalStore`, `useHydrated`
 - `use-adzan-alerts.ts`: pop-up adzan/iqamah dan simulasi
+- `use-background-photo.ts`: URL foto latar, ikut berubah saat foto diganti
 - `use-jumat-simulation.ts`, `use-phase-beeps.ts`, `use-now.ts`
 
 **`components/prayer/`**
@@ -59,3 +61,7 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 ## Kunci localStorage
 
 `jadwal-shalat:city`, `:sound` (default hidup), `:settings`, `:cache`, `:clock-offset`
+
+## IndexedDB
+
+Database `jadwal-shalat`, store `images`, kunci `background`: foto latar TV. Tingkat gelap dan posisi gesernya ada di `Settings.background`.

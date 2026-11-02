@@ -23,6 +23,7 @@ import { OfflineNotice } from "@/components/prayer/offline-notice"
 import { availableSlides, KajianSlide, KasSlide, PetugasSlide } from "@/components/prayer/tv-slides"
 import { SettingsDialog } from "@/components/prayer/settings-dialog"
 import { useAdzanAlerts } from "@/hooks/use-adzan-alerts"
+import { useBackgroundPhoto } from "@/hooks/use-background-photo"
 import { useJumatSimulation } from "@/hooks/use-jumat-simulation"
 import { useNow } from "@/hooks/use-now"
 import { usePersistedState } from "@/hooks/use-persisted-state"
@@ -63,6 +64,20 @@ const NIGHT_SPOTS: React.CSSProperties[] = [
   { left: "14%", bottom: "20%" },
   { right: "10%", top: "8%" },
 ]
+
+/**
+ * Prayer screens keep the photo but much darker, so nothing distracts from the prayer.
+ * The darkening is part of the screen's own opaque background: a see-through
+ * layer would let the countdown and the time board show through.
+ */
+const solemnBackground = (photo: string | null, { x, y }: { x: number; y: number }): React.CSSProperties | undefined =>
+  photo
+    ? {
+        backgroundImage: `linear-gradient(rgb(0 0 0 / 0.85), rgb(0 0 0 / 0.85)), url("${photo}")`,
+        backgroundPosition: `${x}% ${y}%`,
+        backgroundSize: "cover",
+      }
+    : undefined
 
 const BOARD_KEYS: TimeKey[] = ["imsak", "subuh", "terbit", "dzuhur", "ashar", "maghrib", "isya"]
 const DEFAULT_RUNNING_TEXT =
@@ -157,6 +172,7 @@ export function MosqueDisplay() {
   const now = useNow()
   const { city, setCity, locationKey, week, offline, error, settings, setSettings } = useSchedule()
   const [soundOn, setSoundOn] = usePersistedState(SOUND_KEY, true)
+  const photo = useBackgroundPhoto()
   const [controlsVisible, pokeControls] = useIdleControls()
   const [fullscreen, setFullscreen] = useState(false)
   // Night dimming is lifted for a minute after the mouse moves.
@@ -284,6 +300,8 @@ export function MosqueDisplay() {
 
   // Scale the pop-up with the screen (designed for ~720px tall), e.g. 1.4x on a 1080p TV.
   const popupScale = Math.min(1.8, Math.max(1, (window.innerHeight - 40) / 720))
+  // A soft shadow keeps text readable where the photo stays bright.
+  const overPhoto = photo && "[text-shadow:0_1px_8px_rgb(0_0_0/0.8)]"
 
   return (
     <div
@@ -295,18 +313,38 @@ export function MosqueDisplay() {
         "relative flex h-dvh flex-col overflow-hidden bg-[#04110f] text-white select-none",
         !controlsVisible && "cursor-none"
       )}
+      style={
+        photo
+          ? ({ "--tv-panel": "rgb(0 0 0 / 0.5)", "--tv-highlight": "rgb(69 26 3 / 0.75)" } as React.CSSProperties)
+          : undefined
+      }
     >
       {/* Backdrop */}
-      <div className="bg-geometric-light pointer-events-none absolute inset-0 opacity-[0.05]" />
-      <div
-        className={cn(
-          "pointer-events-none absolute -top-1/3 left-1/2 aspect-square w-[80vw] -translate-x-1/2 rounded-full blur-3xl transition-colors duration-1000",
-          isIqamah ? "bg-amber-500/20" : "bg-emerald-500/15"
-        )}
-      />
+      {photo ? (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0 bg-cover"
+            style={{
+              backgroundImage: `url("${photo}")`,
+              backgroundPosition: `${settings.background.x}% ${settings.background.y}%`,
+            }}
+          />
+          <div className="pointer-events-none absolute inset-0 bg-black" style={{ opacity: settings.background.darkness / 100 }} />
+        </>
+      ) : (
+        <>
+          <div className="bg-geometric-light pointer-events-none absolute inset-0 opacity-[0.05]" />
+          <div
+            className={cn(
+              "pointer-events-none absolute -top-1/3 left-1/2 aspect-square w-[80vw] -translate-x-1/2 rounded-full blur-3xl transition-colors duration-1000",
+              isIqamah ? "bg-amber-500/20" : "bg-emerald-500/15"
+            )}
+          />
+        </>
+      )}
 
       {/* Header: mosque name + clock */}
-      <header className="relative flex items-start justify-between gap-[2vw] px-[3vw] pt-[2.5vh]">
+      <header className={cn("relative flex items-start justify-between gap-[2vw] px-[3vw] pt-[2.5vh]", overPhoto)}>
         <div className="flex min-w-0 items-center gap-[1.2vw]">
           <span className="grid aspect-square w-[min(6vw,9vh)] shrink-0 place-items-center rounded-[1.2vw] bg-linear-to-br from-amber-200 to-amber-500 text-emerald-950">
             <MoonStarIcon className="size-1/2" />
@@ -336,7 +374,7 @@ export function MosqueDisplay() {
       </header>
 
       {/* Main state */}
-      <main className="relative grid min-h-0 flex-1 place-items-center overflow-hidden px-[3vw] [container-type:size]">
+      <main className={cn("relative grid min-h-0 flex-1 place-items-center overflow-hidden px-[3vw] [container-type:size]", overPhoto)}>
         <AnimatePresence mode="wait">
           {slide ? (
             <motion.div
@@ -347,7 +385,7 @@ export function MosqueDisplay() {
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center"
             >
-              <p className="mb-[3cqh] inline-flex items-center gap-[0.6vw] rounded-full bg-white/10 px-[1.5vw] py-[1cqh] text-[min(1.8vw,4.6cqh)] text-emerald-100">
+              <p className="mb-[3cqh] inline-flex items-center gap-[0.6vw] rounded-full bg-[color:var(--tv-panel,rgb(255_255_255/0.1))] px-[1.5vw] py-[1cqh] text-[min(1.8vw,4.6cqh)] text-emerald-100">
                 <ClockIcon className="size-[1em]" /> Menuju {name}
                 <span className="font-mono font-semibold tabular-nums">{formatDuration(phase.end - now)}</span>
               </p>
@@ -373,7 +411,9 @@ export function MosqueDisplay() {
               <p
                 className={cn(
                   "inline-flex items-center gap-[0.6vw] rounded-full px-[1.5vw] py-[1cqh] text-[min(1.8vw,5cqh)] font-semibold tracking-[0.2em] uppercase",
-                  isIqamah ? "bg-amber-400 text-emerald-950" : "bg-white/10 text-emerald-100"
+                  isIqamah
+                    ? "bg-amber-400 text-emerald-950 [text-shadow:none]"
+                    : "bg-[color:var(--tv-panel,rgb(255_255_255/0.1))] text-emerald-100"
                 )}
               >
                 {isIqamah ? <BellRingIcon className="size-[1em]" /> : <ClockIcon className="size-[1em]" />}
@@ -412,7 +452,7 @@ export function MosqueDisplay() {
       </main>
 
       {/* Board of today's times */}
-      <section className="relative grid grid-cols-7 gap-[0.8vw] px-[3vw] pb-[2vh]">
+      <section className={cn("relative grid grid-cols-7 gap-[0.8vw] px-[3vw] pb-[2vh]", overPhoto)}>
         {BOARD_KEYS.map((key) => {
           const active = key === phase.key && phase.date === day.date
           return (
@@ -422,9 +462,9 @@ export function MosqueDisplay() {
                 "rounded-[1.2vw] border px-[0.8vw] py-[1.6vh] text-center transition-colors duration-700",
                 active
                   ? isIqamah
-                    ? "border-amber-300/60 bg-amber-400/20"
-                    : "border-emerald-300/50 bg-emerald-400/15"
-                  : "border-white/10 bg-white/[0.04]"
+                    ? cn("border-amber-300/60", photo ? "bg-amber-950/70" : "bg-amber-400/20")
+                    : cn("border-emerald-300/50", photo ? "bg-emerald-950/70" : "bg-emerald-400/15")
+                  : "border-white/10 bg-[color:var(--tv-panel,rgb(255_255_255/0.04))]"
               )}
             >
               <p className="text-[min(1.7vw,3vh)] font-semibold text-emerald-50/90">{prayerLabel(key, day.date)}</p>
@@ -435,7 +475,12 @@ export function MosqueDisplay() {
       </section>
 
       {/* Running text */}
-      <footer className="relative overflow-hidden border-t border-white/10 bg-emerald-950/80 py-[1.4vh]">
+      <footer
+        className={cn(
+          "relative overflow-hidden border-t border-white/10 py-[1.4vh]",
+          photo ? "bg-black/60" : "bg-emerald-950/80"
+        )}
+      >
         <RunningText items={runningItems} />
       </footer>
 
@@ -478,6 +523,7 @@ export function MosqueDisplay() {
         preview={Boolean(jumatPreview)}
         onClose={dismissJumatPreview}
         className="absolute inset-0 z-20"
+        style={solemnBackground(photo, settings.background)}
       />
 
       {/* Prayer in progress */}
@@ -489,6 +535,7 @@ export function MosqueDisplay() {
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
             className="absolute inset-0 z-20 grid place-items-center bg-black text-center"
+            style={solemnBackground(photo, settings.background)}
           >
             <div>
               <p className="font-arabic text-[min(5vw,8vh)] text-amber-100/80" lang="ar">

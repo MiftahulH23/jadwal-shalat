@@ -1,5 +1,6 @@
 // Backup / restore of everything stored on this device, as a file or a short code.
 
+import { isPhotoDataUrl } from "@/lib/background"
 import { isInIndonesia, type City } from "@/lib/prayer"
 import { normalizeSettings, type Settings } from "@/lib/settings"
 
@@ -10,6 +11,8 @@ export type Backup = {
   settings: Settings
   city: City
   soundOn: boolean
+  /** Background photo as a data URL. In backup files only: it would make a code far too long to paste. */
+  photo?: string
 }
 
 type BackupFile = Backup & { app: string; version: number; exportedAt: string }
@@ -68,5 +71,6 @@ export function parseBackup(input: string): Partial<Backup> & { settings: Settin
     settings: normalizeSettings(data.settings),
     city: parseCity(data.city) ?? undefined,
     soundOn: typeof data.soundOn === "boolean" ? data.soundOn : undefined,
+    photo: isPhotoDataUrl(data.photo) ? data.photo : undefined,
   }
 }

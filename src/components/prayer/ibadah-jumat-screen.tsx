@@ -16,10 +16,11 @@ type Props = {
   preview?: boolean
   onClose?: () => void
   className?: string
+  style?: React.CSSProperties
 }
 
 /** Full-screen notice shown on Friday from the Jumat adzan until the prayer ends. */
-export function IbadahJumatScreen({ show, clock, iqamahTime, people, preview, onClose, className }: Props) {
+export function IbadahJumatScreen({ show, clock, iqamahTime, people, preview, onClose, className, style }: Props) {
   return (
     <AnimatePresence>
       {show && (
@@ -29,6 +30,7 @@ export function IbadahJumatScreen({ show, clock, iqamahTime, people, preview, on
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
           className={cn("grid place-items-center bg-[#020a08] px-[6vw] text-center text-white", className)}
+          style={style}
           onClick={() => preview && onClose?.()}
           role="status"
         >

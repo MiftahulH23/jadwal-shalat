@@ -16,6 +16,9 @@ Keputusan pemilik proyek dan alasannya. Jangan membaliknya tanpa bertanya.
 | Baris tanggal harian 7 kolom selebar penuh | Permintaan pemilik |
 | Kode dihitung sendiri (`astronomy.ts`), bukan library `adhan` | Butuh koreksi ketinggian dan parameter Kemenag; library tidak menyediakannya |
 | Jam dikoreksi otomatis ke jam server | Laptop pemilik tertinggal beberapa detik dari HP; adzan ikut terlambat |
+| Foto latar disimpan di browser (IndexedDB), bukan diunggah | Tetap tanpa database dan biaya, bisa offline. Akibatnya dipasang per perangkat |
+| Foto hanya di `/layar`, layar shalat dan Jumat lebih gelap, layar malam tetap hitam | Pilihan pemilik: jamaah di HP tidak terganggu dan tidak mengganggu kekhusyukan |
+| Pengaturan tetap memakai tombol Simpan, dengan peringatan saat menutup yang punya tombol Simpan | Pemilik sering lupa menyimpan dan memilih ini daripada simpan otomatis |
 | Slide dihitung dari jam, bukan timer | Beberapa layar tetap serempak dan tidak perlu state |
 
 ## Preferensi kerja pemilik

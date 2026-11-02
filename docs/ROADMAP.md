@@ -10,6 +10,8 @@ Urutan sesuai saran terakhir; prioritas akhir ditentukan pemilik.
 
 ## Untuk masjid
 
+- [x] Foto latar layar TV dari foto masjid sendiri
+- [ ] Beberapa foto latar yang berganti perlahan
 - [ ] Pengumuman dan berita duka dengan tanggal mulai dan selesai
 - [ ] Slide gambar (QRIS infaq, poster) dari link, disimpan agar tetap tampil offline
 - [ ] Cetak jadwal imsakiyah Ramadhan

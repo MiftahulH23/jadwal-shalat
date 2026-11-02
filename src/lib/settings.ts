@@ -35,6 +35,11 @@ export type Settings = {
   showSimulation: boolean
   /** Mosque display: dim the screen at night, between Isya and Subuh. */
   night: { enabled: boolean; afterIsya: number; beforeSubuh: number }
+  /**
+   * Mosque display: how the background photo is shown. The photo itself is in lib/background.ts.
+   * x and y are the part shown, as CSS background-position percentages (0 = left/top, 100 = right/bottom).
+   */
+  background: { darkness: number; x: number; y: number }
   /** Recurring study sessions (pengajian / kajian). */
   kajian: Kajian[]
 }
@@ -46,6 +51,9 @@ export const DAY_NAMES = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "
 export const kajianDayLabel = (day: number) => (day < 0 ? "Setiap hari" : DAY_NAMES[day])
 
 export const MAX_KAJIAN = 12
+/** Below this, small text becomes hard to read over a bright photo. */
+export const MIN_PHOTO_DARKNESS = 40
+export const MAX_PHOTO_DARKNESS = 90
 
 export type JumatOfficers = { khatib: string; imam: string }
 
@@ -68,6 +76,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   kas: { enabled: false, period: "", lastBalance: 0, income: 0, expense: 0 },
   night: { enabled: true, afterIsya: 60, beforeSubuh: 60 },
+  background: { darkness: 60, x: 50, y: 50 },
   kajian: [],
   showSimulation: false,
 }
@@ -115,6 +124,11 @@ export function normalizeSettings(raw: Partial<Settings> | null | undefined): Se
       enabled: raw?.night?.enabled !== false,
       afterIsya: clamp(raw?.night?.afterIsya, 0, 360, d.night.afterIsya),
       beforeSubuh: clamp(raw?.night?.beforeSubuh, 0, 360, d.night.beforeSubuh),
+    },
+    background: {
+      darkness: clamp(raw?.background?.darkness, MIN_PHOTO_DARKNESS, MAX_PHOTO_DARKNESS, d.background.darkness),
+      x: clamp(raw?.background?.x, 0, 100, d.background.x),
+      y: clamp(raw?.background?.y, 0, 100, d.background.y),
     },
     kajian: (Array.isArray(raw?.kajian) ? raw.kajian : [])
       .slice(0, MAX_KAJIAN)

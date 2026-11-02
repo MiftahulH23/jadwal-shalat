@@ -1,11 +1,15 @@
 "use client"
 
-import { MoonIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { ImageIcon, ImagePlusIcon, MoonIcon, MoveIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Field, Row, RupiahInput, Stepper } from "@/components/prayer/settings-fields"
+import { useBackgroundPhoto } from "@/hooks/use-background-photo"
+import { compressPhoto } from "@/lib/background"
 import { formatScheduleDate } from "@/lib/format"
 import { addDays, PRAYER_KEYS, TIME_LABELS } from "@/lib/prayer"
 import {
@@ -13,6 +17,8 @@ import {
   formatRupiah,
   kasBalance,
   MAX_KAJIAN,
+  MAX_PHOTO_DARKNESS,
+  MIN_PHOTO_DARKNESS,
   type Kajian,
   type Settings,
 } from "@/lib/settings"
@@ -244,7 +250,160 @@ export function KasSection({ draft, setDraft }: SectionProps) {
   )
 }
 
-/** Dim the mosque display at night (between Isya and Subuh). */
+/** A photo waiting for "Simpan": a new one, null to remove the current one, undefined for no change. */
+export type PhotoChange = { blob: Blob; url: string } | null | undefined
+
+const clampPercent = (n: number) => Math.min(100, Math.max(0, n))
+
+/** Preview of the mosque display; drag the photo, or use the arrow keys, to choose the part shown. */
+function PhotoPreview({
+  photo,
+  background,
+  onMove,
+}: {
+  photo: string
+  background: Settings["background"]
+  onMove: (position: { x: number; y: number }) => void
+}) {
+  const [natural, setNatural] = useState<{ url: string; w: number; h: number } | null>(null)
+  const drag = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const image = new Image()
+    image.onload = () => setNatural({ url: photo, w: image.naturalWidth, h: image.naturalHeight })
+    image.src = photo
+  }, [photo])
+
+  /** How far the photo sticks out of the preview, in px; dragging by this much crosses the whole range. */
+  const overflow = () => {
+    const box = ref.current?.getBoundingClientRect()
+    if (!box || natural?.url !== photo) return { x: 0, y: 0 }
+    const scale = Math.max(box.width / natural.w, box.height / natural.h)
+    return { x: natural.w * scale - box.width, y: natural.h * scale - box.height }
+  }
+
+  return (
+    <div
+      ref={ref}
+      role="group"
+      tabIndex={0}
+      aria-label="Pratinjau foto latar. Geser foto atau tekan tombol panah untuk memilih bagian yang ditampilkan"
+      className="relative grid aspect-video cursor-grab touch-none place-items-center overflow-hidden rounded-lg bg-cover text-white outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing"
+      style={{ backgroundImage: `url("${photo}")`, backgroundPosition: `${background.x}% ${background.y}%` }}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId)
+        drag.current = { pointerX: e.clientX, pointerY: e.clientY, x: background.x, y: background.y }
+      }}
+      onPointerMove={(e) => {
+        if (!drag.current) return
+        const room = overflow()
+        // The photo follows the pointer: moving it right reveals more of its left side.
+        onMove({
+          x: room.x > 0 ? clampPercent(drag.current.x - ((e.clientX - drag.current.pointerX) / room.x) * 100) : background.x,
+          y: room.y > 0 ? clampPercent(drag.current.y - ((e.clientY - drag.current.pointerY) / room.y) * 100) : background.y,
+        })
+      }}
+      onPointerUp={() => (drag.current = null)}
+      onPointerCancel={() => (drag.current = null)}
+      onKeyDown={(e) => {
+        const step = { ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5] }[e.key]
+        if (!step) return
+        e.preventDefault()
+        onMove({ x: clampPercent(background.x + step[0]), y: clampPercent(background.y + step[1]) })
+      }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-black" style={{ opacity: background.darkness / 100 }} />
+      <p className="pointer-events-none relative font-mono text-3xl font-bold tabular-nums [text-shadow:0_1px_8px_rgb(0_0_0/0.8)]">12:34:56</p>
+      <span className="pointer-events-none absolute bottom-2 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs whitespace-nowrap">
+        <MoveIcon className="size-3" /> Geser foto untuk mengatur posisi
+      </span>
+    </div>
+  )
+}
+
+/** Background photo of the mosque display, with a live preview. */
+export function BackgroundSection({
+  draft,
+  setDraft,
+  change,
+  onChange,
+}: SectionProps & { change: PhotoChange; onChange: (next: PhotoChange) => void }) {
+  const stored = useBackgroundPhoto()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const photo = change === undefined ? stored : (change?.url ?? null)
+  const set = (patch: Partial<Settings["background"]>) =>
+    setDraft({ ...draft, background: { ...draft.background, ...patch } })
+
+  const choose = async (file: File | undefined) => {
+    if (!file) return
+    setBusy(true)
+    try {
+      const blob = await compressPhoto(file)
+      onChange({ blob, url: URL.createObjectURL(blob) })
+    } catch (err) {
+      toast.error((err as Error).message)
+    } finally {
+      setBusy(false)
+      if (inputRef.current) inputRef.current.value = ""
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl border bg-card/60 p-3">
+      <div>
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          <ImageIcon className="size-4 text-primary" /> Foto latar layar masjid
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Foto tersimpan di browser ini saja, tidak diunggah. Simpan foto aslinya, dan pasang lagi di perangkat lain
+          atau pindahkan lewat file cadangan.
+        </p>
+      </div>
+
+      {photo && <PhotoPreview photo={photo} background={draft.background} onMove={set} />}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        aria-label="Pilih foto latar"
+        onChange={(e) => void choose(e.target.files?.[0])}
+      />
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" className="flex-1 gap-2" disabled={busy} onClick={() => inputRef.current?.click()}>
+          <ImagePlusIcon /> {busy ? "Memproses foto…" : photo ? "Ganti foto" : "Pilih foto"}
+        </Button>
+        {photo && (
+          <Button variant="outline" disabled={busy} onClick={() => set({ x: 50, y: 50 })}>
+            Ke tengah
+          </Button>
+        )}
+        {photo && (
+          <Button variant="outline" className="gap-2" disabled={busy} onClick={() => onChange(null)}>
+            <Trash2Icon /> Hapus
+          </Button>
+        )}
+      </div>
+
+      {photo && (
+        <Row label="Tingkat gelap" hint="Makin gelap, jadwal makin mudah dibaca">
+          <Stepper
+            value={draft.background.darkness}
+            min={MIN_PHOTO_DARKNESS}
+            max={MAX_PHOTO_DARKNESS}
+            step={5}
+            suffix="%"
+            onChange={(darkness) => set({ darkness })}
+          />
+        </Row>
+      )}
+    </div>
+  )
+}
+
 export function SimulationToggle({ draft, setDraft }: SectionProps) {
   return (
     <Row label="Alat simulasi pop-up" hint="Tampilkan tombol simulasi adzan, iqamah, dan Jumat (untuk pengurus menguji tampilan)">
@@ -257,6 +416,7 @@ export function SimulationToggle({ draft, setDraft }: SectionProps) {
   )
 }
 
+/** Dim the mosque display at night (between Isya and Subuh). */
 export function NightSection({ draft, setDraft }: SectionProps) {
   const set = (patch: Partial<Settings["night"]>) => setDraft({ ...draft, night: { ...draft.night, ...patch } })
   return (

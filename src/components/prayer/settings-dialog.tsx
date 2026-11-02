@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { InfoIcon, RotateCcwIcon, Settings2Icon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -21,13 +21,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { BackupPanel } from "@/components/prayer/backup-panel"
 import { Row, Stepper } from "@/components/prayer/settings-fields"
 import {
+  BackgroundSection,
   JumatScheduleSection,
   KajianSection,
   KasSection,
   NightSection,
   SimulationToggle,
   PetugasSection,
+  type PhotoChange,
 } from "@/components/prayer/settings-sections"
+import { saveBackground } from "@/lib/background"
 import { cn } from "@/lib/utils"
 import { locationLabel, PRAYER_KEYS, TIME_KEYS, TIME_LABELS } from "@/lib/prayer"
 import { DEFAULT_SETTINGS, normalizeSettings, splitRunningText, type RamadanMode, type Settings } from "@/lib/settings"
@@ -55,15 +58,58 @@ const RAMADAN_OPTIONS: { value: RamadanMode; label: string }[] = [
 export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore, today }: Props) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(settings)
+  const [photoChange, setPhotoChange] = useState<PhotoChange>(undefined)
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) setDraft(settings)
-    setOpen(next)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const saveButton = useRef<HTMLButtonElement>(null)
+
+  // Normalized first: an empty new pengajian, for example, is not worth a warning.
+  const settingsChanged = JSON.stringify(normalizeSettings(draft)) !== JSON.stringify(settings)
+  const unsaved = open && (settingsChanged || photoChange !== undefined)
+
+  // Reloading or closing the tab can't show our own warning, only the browser's.
+  useEffect(() => {
+    if (!unsaved) return
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener("beforeunload", warn)
+    return () => window.removeEventListener("beforeunload", warn)
+  }, [unsaved])
+
+  const changePhoto = (next: PhotoChange) => {
+    if (photoChange) URL.revokeObjectURL(photoChange.url)
+    setPhotoChange(next)
   }
 
-  const save = () => {
-    onSave(draft)
+  /** Closes for real; a photo that was chosen but not saved is dropped. */
+  const close = () => {
+    changePhoto(undefined)
+    setConfirmOpen(false)
     setOpen(false)
+  }
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setDraft(settings)
+      setOpen(true)
+    } else if (unsaved) {
+      setConfirmOpen(true)
+    } else {
+      close()
+    }
+  }
+
+  const save = async () => {
+    setConfirmOpen(false)
+    if (photoChange !== undefined) {
+      try {
+        await saveBackground(photoChange?.blob ?? null)
+      } catch {
+        toast.error("Foto gagal disimpan. Pastikan browser tidak dalam mode penyamaran.")
+        return
+      }
+    }
+    onSave(draft)
+    close()
     toast.success("Pengaturan disimpan di perangkat ini")
   }
 
@@ -274,6 +320,7 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
                 </div>
               </div>
             )}
+            <BackgroundSection draft={draft} setDraft={setDraft} change={photoChange} onChange={changePhoto} />
             <NightSection draft={draft} setDraft={setDraft} />
             <Row label={`Layar "sedang shalat"`} hint="Lama tampil setelah iqamah (0 = tidak)">
               <Stepper
@@ -290,11 +337,11 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
             <BackupPanel
               // Back up what the form shows, including changes not saved yet.
               current={{ ...backup, settings: draft }}
-              unsaved={JSON.stringify(normalizeSettings(draft)) !== JSON.stringify(settings)}
+              unsaved={settingsChanged}
               onRestore={(restored) => {
                 onRestore(restored)
                 setDraft(restored.settings)
-                setOpen(false)
+                close()
               }}
             />
           </TabsContent>
@@ -305,12 +352,37 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
             <RotateCcwIcon /> Kembalikan default
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Batal
             </Button>
-            <Button onClick={save}>Simpan</Button>
+            <Button onClick={() => void save()}>Simpan</Button>
           </div>
         </DialogFooter>
+
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          {/* Focus starts on Simpan, so pressing Enter by habit keeps the changes. */}
+          <DialogContent className="sm:max-w-md" showCloseButton={false} initialFocus={saveButton}>
+            <DialogHeader>
+              <DialogTitle>Simpan perubahan?</DialogTitle>
+              <DialogDescription>
+                Ada pengaturan yang belum disimpan. Kalau tidak disimpan, perubahan tersebut akan hilang.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={close}>
+                Jangan simpan
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>
+                  Lanjut mengatur
+                </Button>
+                <Button ref={saveButton} className="flex-1" onClick={() => void save()}>
+                  Simpan
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   )

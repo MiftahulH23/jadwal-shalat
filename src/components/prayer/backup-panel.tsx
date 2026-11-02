@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { blobToDataUrl, dataUrlToBlob, loadBackground, MAX_PHOTO_DATA_URL, saveBackground } from "@/lib/background"
 import { parseBackup, toBackupCode, toBackupJson, type Backup } from "@/lib/backup"
 import { download } from "@/lib/export"
 import { prettyCity } from "@/lib/prayer"
@@ -23,9 +24,12 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
   const [code, setCode] = useState("")
   const [copied, setCopied] = useState(false)
 
-  const exportFile = () => {
+  const exportFile = async () => {
     const date = new Date().toISOString().slice(0, 10)
-    download(new Blob([toBackupJson(current)], { type: "application/json" }), `pengaturan-jadwal-shalat-${date}.json`)
+    // Without readable photo storage the settings are still worth saving.
+    const photo = await loadBackground().catch(() => null)
+    const json = toBackupJson({ ...current, ...(photo && { photo: await blobToDataUrl(photo) }) })
+    download(new Blob([json], { type: "application/json" }), `pengaturan-jadwal-shalat-${date}.json`)
     toast.success("File cadangan diunduh")
   }
 
@@ -40,9 +44,15 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
     }
   }
 
-  const restore = (text: string) => {
+  const restore = async (text: string) => {
     try {
       const backup = parseBackup(text)
+      // A backup without a photo (a code, an older file) leaves the current photo in place.
+      if (backup.photo) {
+        await saveBackground(dataUrlToBlob(backup.photo)).catch(() => {
+          throw new Error("Foto latar gagal disimpan di browser ini. Pengaturan tidak diubah.")
+        })
+      }
       onRestore(backup)
       setCode("")
       toast.success("Pengaturan berhasil dipulihkan", {
@@ -55,11 +65,12 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
 
   const importFile = async (file: File | undefined) => {
     if (!file) return
-    if (file.size > 100_000) {
+    // Settings take well under 100 KB; the rest of the allowance is for the photo.
+    if (file.size > MAX_PHOTO_DATA_URL + 100_000) {
       toast.error("File terlalu besar untuk sebuah cadangan pengaturan.")
       return
     }
-    restore(await file.text())
+    await restore(await file.text())
     if (fileRef.current) fileRef.current.value = ""
   }
 
@@ -75,7 +86,7 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
       <section className="space-y-2">
         <p className="text-sm font-medium">Buat cadangan</p>
         <div className="grid gap-2 sm:grid-cols-2">
-          <Button variant="outline" className="gap-2" onClick={exportFile}>
+          <Button variant="outline" className="gap-2" onClick={() => void exportFile()}>
             <DownloadIcon /> Unduh file
           </Button>
           <Button variant="outline" className="gap-2" onClick={copyCode}>
@@ -84,7 +95,7 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
         </div>
         <p className="text-xs text-muted-foreground">
           Berisi semua pengaturan (iqamah, koreksi, Ramadhan, Jumat, petugas, pengajian, kas, layar & alamat),
-          kota, dan status suara.
+          kota, dan status suara. Foto latar hanya ikut di file, tidak di kode.
           {unsaved && <span className="text-gold"> Termasuk perubahan yang belum Anda simpan.</span>}
         </p>
       </section>
@@ -108,7 +119,7 @@ export function BackupPanel({ current, unsaved, onRestore }: Props) {
           placeholder="…atau tempel kode cadangan di sini (diawali JS1-)"
           className="max-h-40 resize-none overflow-y-auto font-mono text-xs wrap-anywhere"
         />
-        <Button className="w-full gap-2" disabled={!code.trim()} onClick={() => restore(code)}>
+        <Button className="w-full gap-2" disabled={!code.trim()} onClick={() => void restore(code)}>
           <ClipboardPasteIcon /> Pulihkan dari kode
         </Button>
         <p className="text-xs text-muted-foreground">Memulihkan akan menimpa pengaturan di perangkat ini.</p>

@@ -19,6 +19,7 @@ const { values: args } = parseArgs({
     cycle: { type: "string" }, // TV slide cycle length in seconds, used with --offset
     offset: { type: "string" }, // seconds into that cycle
     settings: { type: "string" }, // JSON, or a path to a JSON file
+    photo: { type: "string" }, // background photo file, stored as is on the TV page (no compression)
     click: { type: "string" }, // exact button text to click after load
     wait: { type: "string", default: "2500" },
     out: { type: "string", default: join(tmpdir(), "jadwal-shot.png") },
@@ -81,6 +82,28 @@ try {
   }
 
   await page.goto(`${args.base}/${args.page}`, { waitUntil: "networkidle0", timeout: 60_000 })
+
+  if (args.photo) {
+    // Same database as src/lib/background.ts.
+    await page.evaluate(
+      (base64) =>
+        new Promise((resolve, reject) => {
+          const blob = new Blob([Uint8Array.from(atob(base64), (ch) => ch.charCodeAt(0))], { type: "image/jpeg" })
+          const open = indexedDB.open("jadwal-shalat", 1)
+          open.onupgradeneeded = () => open.result.createObjectStore("images")
+          open.onerror = () => reject(open.error)
+          open.onsuccess = () => {
+            const tx = open.result.transaction("images", "readwrite")
+            tx.objectStore("images").put(blob, "background")
+            tx.oncomplete = () => resolve()
+            tx.onerror = () => reject(tx.error)
+          }
+        }),
+      readFileSync(args.photo).toString("base64")
+    )
+    await page.reload({ waitUntil: "networkidle0", timeout: 60_000 })
+  }
+
   await sleep(Number(args.wait))
 
   if (args.click) {

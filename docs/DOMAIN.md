@@ -61,6 +61,8 @@ Dzuhur hari Jumat menjadi "Jumat" (الجمعة).
 - Layar redup malam: dari Isya + X menit sampai Subuh − Y menit. Saat Ramadhan menyala paling lambat 150 menit sebelum Subuh. Gerakan mouse menyalakan 1 menit.
 - Teks berjalan: kalimat dipisah `;`, pembatas ✦.
 - Alamat kosong = lokasi otomatis.
+- Foto latar (opsional, satu foto, hanya di `/layar`): dikecilkan di browser menjadi JPEG, cukup untuk menutup layar Full HD. Tingkat gelap 40–90%, default 60%. Bagian yang tampil diatur dengan menggeser foto di pratinjau (`x`, `y` berupa persen `background-position`). Pratinjau berasio 16:9, jadi pada TV dengan rasio lain potongannya bisa sedikit berbeda. Layar shalat dan Jumat memakai foto yang jauh lebih gelap (85%) sebagai latar tertutup penuh, supaya hitung mundur di belakangnya tidak tembus. Layar redup malam tetap hitam penuh.
+- Foto hanya tersimpan di browser perangkat itu. Ikut di file cadangan, tidak di kode `JS1-`. Memulihkan cadangan tanpa foto tidak menghapus foto yang ada.
 - Ukuran bagian tengah memakai satuan `cqh` (`main` adalah size container), bukan `vh`. Hitung mundur mengecil untuk setiap baris tambahan.
 
 ## Ramadhan

@@ -35,7 +35,7 @@ npm run shot -- --size 390x844 --mobile --settings '{"showSimulation":true}' --c
 npm run shot -- --page layar --skew=-300
 ```
 
-Opsi lain: `--base <url>` (default `http://localhost:3123`, bisa produksi), `--wait <ms>`, `--browser <path>`. `--settings` menerima JSON atau path file. `--at` mematikan koreksi jam agar jam palsunya tidak dibatalkan. Keluaran JSON: `realClockWIB`, `shownClock`, `clockOffsetMs`, `pageOverflow`, `middle` (apakah isi bagian tengah TV muat), `dialog` (apakah pop-up muat), `text`.
+Opsi lain: `--photo <file>` (foto latar, disimpan apa adanya tanpa kompresi), `--base <url>` (default `http://localhost:3123`, bisa produksi), `--wait <ms>`, `--browser <path>`. `--settings` menerima JSON atau path file. `--at` mematikan koreksi jam agar jam palsunya tidak dibatalkan. Keluaran JSON: `realClockWIB`, `shownClock`, `clockOffsetMs`, `pageOverflow`, `middle` (apakah isi bagian tengah TV muat), `dialog` (apakah pop-up muat), `text`.
 
 Ukuran layar yang sudah pernah bermasalah: TV 1763×844, 1920×1080, 1366×768, 1280×720; HP 390×844, 375×667.
 
@@ -49,7 +49,7 @@ Ukuran layar yang sudah pernah bermasalah: TV 1763×844, 1920×1080, 1366×768, 
 - `next dev` tidak bisa jalan dua kali di folder yang sama. Pengguna sering memakai port 3000; pakai `next start -p 3123` untuk tes.
 - Server dev yang lama bisa menyajikan CSS usang. Kalau tampilan aneh, bandingkan dengan build produksi.
 - Service worker hanya aktif di produksi.
-- Server `next start` lama yang masih hidup setelah build ulang menyajikan 404 untuk rute baru dan halaman kosong. Matikan dulu lewat PowerShell (`Get-NetTCPConnection -LocalPort 3123 -State Listen`), pastikan portnya kosong.
+- Server `next start` lama yang masih hidup setelah build ulang menyajikan 404 untuk rute baru dan halaman kosong. Gejala lain: file `_next/static` membalas 500 dan halaman tampil tanpa CSS. `Get-NetTCPConnection` bisa tidak menemukannya, jadi cari lewat PowerShell: `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match '3123' }`, lalu hentikan prosesnya.
 - Di localhost, server memakai jam komputer yang sama, jadi koreksi jam selalu mendekati 0. Pakai `--skew` atau uji di produksi.
 
 **Pengujian**

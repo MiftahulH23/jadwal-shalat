@@ -42,7 +42,9 @@ function SlideFrame({ icon: Icon, title, subtitle, children }: { icon: LucideIco
   )
 }
 
-const cell = "rounded-[1vw] border border-white/10 bg-white/[0.05] px-[1.5vw] py-[1.9cqh]"
+// --tv-panel and --tv-highlight are set by the mosque display when a background photo is showing.
+const cell = "rounded-[1vw] border border-white/10 bg-[color:var(--tv-panel,rgb(255_255_255/0.05))] px-[1.5vw] py-[1.9cqh]"
+const highlight = "bg-[color:var(--tv-highlight,rgb(251_191_36/0.15))]"
 
 export function KasSlide({ kas }: { kas: Settings["kas"] }) {
   const rows = [
@@ -63,7 +65,7 @@ export function KasSlide({ kas }: { kas: Settings["kas"] }) {
           </div>
         ))}
       </div>
-      <div className="mt-[1.9cqh] flex items-center justify-between rounded-[1vw] border border-amber-300/40 bg-amber-400/15 px-[2vw] py-[2.2cqh]">
+      <div className={cn("mt-[1.9cqh] flex items-center justify-between rounded-[1vw] border border-amber-300/40 px-[2vw] py-[2.2cqh]", highlight)}>
         <p className="text-[min(2.4vw,6.4cqh)] font-semibold">Saldo akhir</p>
         <p className="font-mono text-[min(4.2vw,11.2cqh)] font-bold text-amber-200 tabular-nums">{formatRupiah(kasBalance(kas))}</p>
       </div>
@@ -120,7 +122,7 @@ export function KajianSlide({ kajian, weekday }: { kajian: Settings["kajian"]; w
           // A lone last item (1, 3 … entries) spans both columns instead of leaving a gap.
           const wide = list.length % 2 === 1 && i === list.length - 1
           return (
-            <div key={k.id} className={cn(cell, wide && "col-span-2", today && "border-amber-300/50 bg-amber-400/15")}>
+            <div key={k.id} className={cn(cell, wide && "col-span-2", today && cn("border-amber-300/50", highlight))}>
               <div className="flex items-center justify-between gap-[1vw]">
                 <p className="text-[min(1.5vw,4cqh)] font-semibold text-amber-200">
                   {kajianDayLabel(k.day)}
