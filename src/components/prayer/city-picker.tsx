@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { isInIndonesia, prettyCity, type City } from "@/lib/prayer"
+import { cn } from "@/lib/utils"
 
 type GeocodeResult = {
   countryCode?: string
@@ -28,8 +29,10 @@ type GeocodeResult = {
 const POPULAR_IDS = ["1301", "1219", "1634", "1638", "1505", "1433", "0228", "2622", "1709", "0816"]
 
 type Props = {
-  value: City
+  /** Null while nothing has been chosen yet. */
+  value: City | null
   onChange: (city: City) => void
+  className?: string
 }
 
 /** Strip administrative prefixes so "KOTA BANDUNG" can be matched with "Bandung". */
@@ -39,7 +42,7 @@ const baseName = (name: string) =>
     .replace(/^(KOTA|KAB\.?|KABUPATEN)\s+/, "")
     .trim()
 
-export function CityPicker({ value, onChange }: Props) {
+export function CityPicker({ value, onChange, className }: Props) {
   const [open, setOpen] = useState(false)
   const [cities, setCities] = useState<City[]>([])
   const [loading, setLoading] = useState(false)
@@ -132,15 +135,24 @@ export function CityPicker({ value, onChange }: Props) {
         render={
           <Button
             variant="outline"
-            className="h-10 max-w-[60vw] justify-between gap-2 rounded-full bg-card/60 px-4 backdrop-blur sm:max-w-none"
+            className={cn(
+              "h-10 max-w-[60vw] justify-between gap-2 rounded-full bg-card/60 px-4 backdrop-blur sm:max-w-none",
+              className
+            )}
             aria-label="Pilih kota"
           />
         }
       >
-        {value.place ? <LocateFixedIcon className="text-primary" /> : <MapPinIcon className="text-primary" />}
+        {value?.place ? <LocateFixedIcon className="text-primary" /> : <MapPinIcon className="text-primary" />}
         <span className="truncate font-medium">
-          {value.place?.kecamatan ? `${value.place.kecamatan}, ` : ""}
-          {prettyCity(value.lokasi)}
+          {value ? (
+            <>
+              {value.place?.kecamatan ? `${value.place.kecamatan}, ` : ""}
+              {prettyCity(value.lokasi)}
+            </>
+          ) : (
+            "Pilih lokasi masjid"
+          )}
         </span>
         <ChevronsUpDownIcon className="opacity-50" />
       </PopoverTrigger>
@@ -155,10 +167,10 @@ export function CityPicker({ value, onChange }: Props) {
               disabled={locating}
             >
               {locating ? <LoaderCircleIcon className="animate-spin" /> : <LocateFixedIcon />}
-              {value.place ? "Perbarui lokasi saya" : "Gunakan lokasi saya"}
+              {value?.place ? "Perbarui lokasi saya" : "Gunakan lokasi saya"}
             </Button>
             <p className="px-2.5 pb-1 text-xs text-muted-foreground">
-              {value.place
+              {value?.place
                 ? `Aktif: Kec. ${value.place.kecamatan || "-"}, ${prettyCity(value.lokasi)}. Pilih kota di bawah untuk kembali ke jadwal resmi kota.`
                 : "Jadwal dihitung tepat sampai kecamatan Anda."}
             </p>
@@ -178,7 +190,7 @@ export function CityPicker({ value, onChange }: Props) {
                         <CommandItem
                           key={`p-${city.id}`}
                           value={`populer ${city.lokasi}`}
-                          data-checked={city.id === value.id && !value.place}
+                          data-checked={city.id === value?.id && !value.place}
                           onSelect={() => select(city)}
                         >
                           {prettyCity(city.lokasi)}
@@ -193,7 +205,7 @@ export function CityPicker({ value, onChange }: Props) {
                     <CommandItem
                       key={city.id}
                       value={city.lokasi}
-                      data-checked={city.id === value.id && !value.place}
+                      data-checked={city.id === value?.id && !value.place}
                       onSelect={() => select(city)}
                     >
                       {prettyCity(city.lokasi)}

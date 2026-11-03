@@ -2,11 +2,23 @@
 
 Urutan sesuai saran terakhir; prioritas akhir ditentukan pemilik.
 
-## Berikutnya: keandalan
+## Wajib sebelum diposting ke publik
+
+Prioritas pertama:
+
+- [x] Penyiapan awal di `/layar`: pilih kota dan isi nama masjid saat pertama dibuka
+- [x] Pesan "Klik sekali untuk mengaktifkan suara" di layar TV selama audio masih diblokir
+- [x] Tes otomatis logika waktu: fase adzan/iqamah, Jumat, pergantian bulan, zona waktu, layar malam, aturan refresh
+
+Setelah itu:
+
+- [ ] Uji di perangkat TV sungguhan, termasuk dibiarkan menyala beberapa hari
+- [ ] Panduan pasang singkat: perangkat yang dipakai, cara layar penuh, yang harus dilakukan setelah listrik mati
+- [ ] Keterangan sumber jadwal dan cara melapor kesalahan
+
+## Keandalan
 
 - [x] Koreksi otomatis kalau jam perangkat meleset
-- [ ] Pesan "Klik sekali untuk mengaktifkan suara" di layar TV selama audio masih diblokir
-- [ ] Tes otomatis logika waktu: fase adzan/iqamah, Jumat, pergantian bulan, zona waktu, layar malam, aturan refresh
 
 ## Untuk masjid
 
@@ -26,7 +38,10 @@ Urutan sesuai saran terakhir; prioritas akhir ditentukan pemilik.
 
 - [ ] Halaman `/bulanan` bisa dipakai offline
 
+## Akan dibahas lagi
+
+- Mengatur TV dari HP: pindai QR sekali, lalu edit dari link rahasia dan TV mengambil perubahannya sendiri. Butuh database kecil tanpa akun (misalnya Upstash Redis), jadi menunggu keputusan pemilik.
+
 ## Tidak direncanakan
 
-- Mengubah pengaturan TV dari HP: butuh database.
 - Suara adzan.

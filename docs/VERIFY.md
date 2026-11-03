@@ -3,11 +3,16 @@
 ## Perintah
 
 ```bash
-npm run check   # tsc + eslint, jalankan setelah setiap perubahan kode
+npm run check   # tsc + eslint + tes, jalankan setelah setiap perubahan kode
+npm test        # tes saja
 npm run build   # sebelum memakai `next start`
 ```
 
-Belum ada tes otomatis (lihat `docs/ROADMAP.md`).
+## Tes otomatis
+
+Tes logika waktu ada di `src/lib/*.test.ts` dan berjalan dengan zona waktu New York (`vitest.config.mts`), untuk membuktikan hasilnya tidak bergantung pada zona perangkat. Tulis waktu yang diharapkan dengan `wib()`/`at()` dari `lib/test-week.ts`, bukan dengan `toEpoch`. `astronomy.test.ts` membandingkan hasil hitungan dengan jadwal Kemenag yang diunduh dari API myQuran.
+
+Tes tidak mencakup tampilan, jadi perubahan tampilan tetap dibuktikan dengan `npm run shot`.
 
 ## Screenshot dan pengukuran: `npm run shot`
 
@@ -35,7 +40,7 @@ npm run shot -- --size 390x844 --mobile --settings '{"showSimulation":true}' --c
 npm run shot -- --page layar --skew=-300
 ```
 
-Opsi lain: `--photo <file>` (foto latar, disimpan apa adanya tanpa kompresi), `--base <url>` (default `http://localhost:3123`, bisa produksi), `--wait <ms>`, `--browser <path>`. `--settings` menerima JSON atau path file. `--at` mematikan koreksi jam agar jam palsunya tidak dibatalkan. Keluaran JSON: `realClockWIB`, `shownClock`, `clockOffsetMs`, `pageOverflow`, `middle` (apakah isi bagian tengah TV muat), `dialog` (apakah pop-up muat), `text`.
+Kota diisi Jakarta kalau belum ada, supaya `/layar` tidak berhenti di penyiapan awal. Opsi lain: `--fresh` (tanpa kota, menampilkan penyiapan awal), `--photo <file>` (foto latar, disimpan apa adanya tanpa kompresi), `--base <url>` (default `http://localhost:3123`, bisa produksi), `--wait <ms>`, `--browser <path>`. `--settings` menerima JSON atau path file. `--at` mematikan koreksi jam agar jam palsunya tidak dibatalkan. Keluaran JSON: `realClockWIB`, `shownClock`, `clockOffsetMs`, `pageOverflow`, `middle` (apakah isi bagian tengah TV muat), `dialog` (apakah pop-up muat), `text`.
 
 Ukuran layar yang sudah pernah bermasalah: TV 1763×844, 1920×1080, 1366×768, 1280×720; HP 390×844, 375×667.
 
@@ -57,6 +62,7 @@ Ukuran layar yang sudah pernah bermasalah: TV 1763×844, 1920×1080, 1366×768, 
 - Slide TV berganti mengikuti jam, jadi ukuran yang diambil bisa saja milik slide, bukan hitung mundur. Pakai `--cycle` dan `--offset`.
 - Pengaturan tersimpan per alamat. Data di localhost tidak ada di produksi, dan sebaliknya. Periksa ini dulu sebelum menganggapnya bug.
 - Kursor di atas pop-up menjeda penutupan otomatis.
+- Untuk menguji pemblokiran suara, jalankan browser dengan `--autoplay-policy=document-user-activation-required`.
 - Rute baru butuh `npx next typegen` sebelum `tsc`.
 
 **React dan UI**

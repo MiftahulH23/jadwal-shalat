@@ -43,7 +43,7 @@ Pengaturan ±30 menit per waktu, diterapkan ke semua tampilan termasuk cetak, PD
 - Pop-up adzan dan iqamah muncul pada menit pertama kejadian (juga kalau halaman baru dibuka), tertutup otomatis 5 detik, jeda saat kursor di atasnya.
 - Tinggi pop-up diukur lalu zoom dibatasi supaya selalu muat layar, tanpa scrollbar.
 - Bip ±5 detik, berhenti saat pop-up ditutup, mengikuti ikon bel, termasuk saat simulasi. Tidak memakai suara adzan: masjid sudah punya muadzin.
-- Browser memblokir suara sampai ada klik pertama (`unlockAudioOnGesture`).
+- Browser memblokir suara sampai ada klik atau tombol ditekan (`unlockAudioOnGesture`). Selama diblokir dan ikon bel menyala, layar TV menampilkan "Suara belum aktif. Klik sekali untuk mengaktifkan" di bawah nama masjid, lalu berbunyi bip pendek saat berhasil aktif. Pesan ini tertutup oleh layar shalat, Jumat, dan malam.
 - Tombol simulasi tersembunyi, dinyalakan lewat Pengaturan > Layar.
 
 ## Hari Jumat
@@ -56,9 +56,10 @@ Dzuhur hari Jumat menjadi "Jumat" (الجمعة).
 
 ## Layar TV
 
+- Penyiapan awal: `/layar` meminta kota dulu kalau belum ada kota tersimpan dan nama masjid masih kosong (`needsLayarSetup`). Selama itu jadwal, pop-up, dan bip belum berjalan, supaya waktu kota bawaan tidak pernah tampil. Nama masjid boleh dikosongkan. Layar yang sudah punya nama masjid tidak pernah ditanya, supaya TV yang sedang dipakai tidak tertutup setelah dimuat ulang. Kota bisa diganti kapan saja dari kontrol di layar.
 - Setelah iqamah: layar "Shalat X sedang berlangsung" selama `prayingMinutes`.
 - Slide (Kas, Petugas, Pengajian; yang kosong dilewati): 30 detik hitung mundur, lalu 12 detik per slide. Dihitung dari jam, `now % siklus`. Hanya saat fase `waiting` dan shalat berikutnya lebih dari 15 menit lagi.
-- Layar redup malam: dari Isya + X menit sampai Subuh − Y menit. Saat Ramadhan menyala paling lambat 150 menit sebelum Subuh. Gerakan mouse menyalakan 1 menit.
+- Layar redup malam: dari Isya + X menit sampai Subuh − Y menit. Saat Ramadhan menyala paling lambat 150 menit sebelum Subuh. Gerakan mouse atau tombol keyboard/remote menyalakan 1 menit dan memunculkan kontrol di layar.
 - Teks berjalan: kalimat dipisah `;`, pembatas ✦.
 - Alamat kosong = lokasi otomatis.
 - Foto latar (opsional, satu foto, hanya di `/layar`): dikecilkan di browser menjadi JPEG, cukup untuk menutup layar Full HD. Tingkat gelap 40–90%, default 60%. Bagian yang tampil diatur dengan menggeser foto di pratinjau (`x`, `y` berupa persen `background-position`). Pratinjau berasio 16:9, jadi pada TV dengan rasio lain potongannya bisa sedikit berbeda. Layar shalat dan Jumat memakai foto yang jauh lebih gelap (85%) sebagai latar tertutup penuh, supaya hitung mundur di belakangnya tidak tembus. Layar redup malam tetap hitam penuh.

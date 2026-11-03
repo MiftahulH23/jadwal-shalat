@@ -18,43 +18,41 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { AdzanModal } from "@/components/prayer/adzan-modal"
+import { CityPicker } from "@/components/prayer/city-picker"
 import { IbadahJumatScreen, jumatPeople } from "@/components/prayer/ibadah-jumat-screen"
+import { LayarSetup } from "@/components/prayer/layar-setup"
 import { OfflineNotice } from "@/components/prayer/offline-notice"
 import { availableSlides, KajianSlide, KasSlide, PetugasSlide } from "@/components/prayer/tv-slides"
 import { SettingsDialog } from "@/components/prayer/settings-dialog"
 import { useAdzanAlerts } from "@/hooks/use-adzan-alerts"
+import { useAudioBlocked } from "@/hooks/use-audio-blocked"
 import { useBackgroundPhoto } from "@/hooks/use-background-photo"
 import { useJumatSimulation } from "@/hooks/use-jumat-simulation"
 import { useNow } from "@/hooks/use-now"
 import { usePersistedState } from "@/hooks/use-persisted-state"
 import { usePhaseBeeps } from "@/hooks/use-phase-beeps"
-import { SOUND_KEY, useSchedule } from "@/hooks/use-schedule"
+import { CITY_KEY, SOUND_KEY, useSchedule, useSettings } from "@/hooks/use-schedule"
 import { playBeeps } from "@/lib/beep"
 import { correctedNow } from "@/lib/clock"
 import { formatClock, formatHijri, formatLongDate, ZONE_TIMEZONES } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import {
   arabicLabel,
-  addDays,
   dateAtOffset,
   formatDuration,
   getPrayerPhase,
   isFriday,
   isJumat,
   prayerLabel,
-  toEpoch,
   locationLabel,
+  type City,
   type TimeKey,
 } from "@/lib/prayer"
 import { getRamadanState } from "@/lib/ramadan"
 import type { parseBackup } from "@/lib/backup"
 import { isRamadan, jumatOfficers, splitRunningText } from "@/lib/settings"
+import { currentSlide, isNightTime, needsLayarSetup, prayingNow } from "@/lib/tv"
 
-const COUNTDOWN_MS = 30_000
-const SLIDE_MS = 12_000
-const ROTATE_MIN_MS = 15 * 60_000
-/** In Ramadan the screen wakes at least this long before Subuh, for sahur. */
-const RAMADAN_WAKE_MIN = 150
 /** Positions the night clock moves between, one per minute. */
 const NIGHT_SPOTS: React.CSSProperties[] = [
   { left: "10%", top: "12%" },
@@ -150,6 +148,31 @@ function RunningText({ items }: { items: string[] }) {
   )
 }
 
+const Loading = () => (
+  <div className="grid h-dvh place-items-center bg-[#04110f] text-white">
+    <MoonStarIcon className="size-16 animate-pulse text-amber-200" />
+  </div>
+)
+
+/** Asks for the location first on a new display, so no wrong times (or beeps) ever run. */
+export function MosqueDisplay() {
+  const [storedCity, setStoredCity, ready] = usePersistedState<City | null>(CITY_KEY, null)
+  const [settings, setSettings] = useSettings()
+
+  if (!ready) return <Loading />
+  if (needsLayarSetup(storedCity, settings)) {
+    return (
+      <LayarSetup
+        onDone={(city, mosqueName) => {
+          if (mosqueName) setSettings({ ...settings, mosqueName })
+          setStoredCity(city)
+        }}
+      />
+    )
+  }
+  return <MosqueScreen />
+}
+
 /** Shows on-screen controls while the mouse moves, hides them after a few seconds. */
 function useIdleControls(delay = 3_000) {
   const [visible, setVisible] = useState(true)
@@ -168,17 +191,35 @@ function useIdleControls(delay = 3_000) {
   return [visible, poke] as const
 }
 
-export function MosqueDisplay() {
+function MosqueScreen() {
   const now = useNow()
   const { city, setCity, locationKey, week, offline, error, settings, setSettings } = useSchedule()
   const [soundOn, setSoundOn] = usePersistedState(SOUND_KEY, true)
   const photo = useBackgroundPhoto()
   const [controlsVisible, pokeControls] = useIdleControls()
   const [fullscreen, setFullscreen] = useState(false)
-  // Night dimming is lifted for a minute after the mouse moves.
+  // Night dimming is lifted for a minute after the mouse moves or a remote key is pressed.
   const [wakeUntil, setWakeUntil] = useState(0)
+  const audioBlocked = useAudioBlocked()
 
   useWakeLock()
+
+  const onActivity = useCallback(() => {
+    pokeControls()
+    setWakeUntil(correctedNow() + 60_000)
+  }, [pokeControls])
+
+  useEffect(() => {
+    window.addEventListener("keydown", onActivity)
+    return () => window.removeEventListener("keydown", onActivity)
+  }, [onActivity])
+
+  // Confirm with a short beep when a click has just turned the sound on, so it is clear that it works.
+  const wasBlocked = useRef(false)
+  useEffect(() => {
+    if (wasBlocked.current && !audioBlocked && soundOn && navigator.userActivation?.isActive) playBeeps("test")
+    wasBlocked.current = audioBlocked
+  }, [audioBlocked, soundOn])
 
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
@@ -232,13 +273,7 @@ export function MosqueDisplay() {
     )
   }
 
-  if (!week || !now || !phase) {
-    return (
-      <div className="grid h-dvh place-items-center bg-[#04110f] text-white">
-        <MoonStarIcon className="size-16 animate-pulse text-amber-200" />
-      </div>
-    )
-  }
+  if (!week || !now || !phase) return <Loading />
 
   const tz = ZONE_TIMEZONES[week.zone]
   const today = dateAtOffset(now, week.utcOffset)
@@ -247,8 +282,7 @@ export function MosqueDisplay() {
   const name = prayerLabel(phase.key, phase.date)
 
   // After iqamah, show a quiet "prayer in progress" screen for a while.
-  const praying =
-    phase.kind === "waiting" && phase.prev && now - phase.start < settings.prayingMinutes * 60_000 ? phase.prev : null
+  const praying = prayingNow(phase, now, settings.prayingMinutes)
   const ramadan = isRamadan(settings.ramadan, now, tz) ? getRamadanState(week, now, today) : null
   // The mosque address from settings, or the selected city / GPS location.
   const location = settings.mosqueAddress.trim() || locationLabel(city, week)
@@ -272,31 +306,9 @@ export function MosqueDisplay() {
   const extraLines = [officersLine, people && isJumat(phase.key, phase.date), ramadan].filter(Boolean).length
   const countdownCqh = 46 - extraLines * 7
 
-  // Info slides (kas, petugas, pengajian) rotate with the countdown, only while the
-  // next prayer is still more than 15 minutes away. Timed off the clock, so screens stay in sync.
-  const slides = availableSlides(settings)
-  const canRotate = phase.kind === "waiting" && phase.end - now > ROTATE_MIN_MS && !praying
-  const cycleMs = COUNTDOWN_MS + SLIDE_MS * slides.length
-  const t = now % cycleMs
-  const slide = canRotate && slides.length && t >= COUNTDOWN_MS ? slides[Math.floor((t - COUNTDOWN_MS) / SLIDE_MS)] : null
-
-  // Night: from some time after Isya until some time before Subuh (earlier in Ramadan, for sahur).
-  const subuhDay = week.days.find((d) => d.date === phase.date)
-  const isyaAt =
-    phase.kind === "waiting" && phase.key === "subuh"
-      ? phase.prev?.key === "isya"
-        ? phase.prev.at
-        : subuhDay
-          ? toEpoch(addDays(phase.date, -1), subuhDay.isya, week.utcOffset)
-          : null
-      : null
-  const wakeBeforeSubuh = ramadan ? Math.max(settings.night.beforeSubuh, RAMADAN_WAKE_MIN) : settings.night.beforeSubuh
-  const night =
-    settings.night.enabled &&
-    isyaAt !== null &&
-    now >= isyaAt + settings.night.afterIsya * 60_000 &&
-    now < phase.end - wakeBeforeSubuh * 60_000 &&
-    now > wakeUntil
+  // Info slides (kas, petugas, pengajian) rotate with the countdown.
+  const slide = currentSlide(availableSlides(settings), phase, now, Boolean(praying))
+  const night = isNightTime(week, phase, now, settings.night, Boolean(ramadan)) && now > wakeUntil
 
   // Scale the pop-up with the screen (designed for ~720px tall), e.g. 1.4x on a 1080p TV.
   const popupScale = Math.min(1.8, Math.max(1, (window.innerHeight - 40) / 720))
@@ -305,10 +317,7 @@ export function MosqueDisplay() {
 
   return (
     <div
-      onPointerMove={() => {
-        pokeControls()
-        setWakeUntil(correctedNow() + 60_000)
-      }}
+      onPointerMove={onActivity}
       className={cn(
         "relative flex h-dvh flex-col overflow-hidden bg-[#04110f] text-white select-none",
         !controlsVisible && "cursor-none"
@@ -360,6 +369,15 @@ export function MosqueDisplay() {
               <div className="mt-[0.8vh]">
                 <OfflineNotice status={offline} variant="tv" />
               </div>
+            )}
+            {soundOn && audioBlocked && (
+              <p
+                role="status"
+                className="mt-[0.8vh] flex w-fit items-center gap-[0.5vw] rounded-full bg-amber-400 px-[1vw] py-[0.4vh] text-[min(1.3vw,2.2vh)] font-semibold text-emerald-950 [text-shadow:none]"
+              >
+                <VolumeXIcon className="size-[1.1em] shrink-0" />
+                Suara belum aktif. Klik sekali untuk mengaktifkan
+              </p>
             )}
           </div>
         </div>
@@ -575,6 +593,11 @@ export function MosqueDisplay() {
         >
           {soundOn ? <Volume2Icon /> : <VolumeXIcon />}
         </Button>
+        <CityPicker
+          value={city}
+          onChange={setCity}
+          className="h-9 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white dark:bg-transparent dark:hover:bg-white/10"
+        />
         <SettingsDialog
           settings={settings}
           onSave={setSettings}

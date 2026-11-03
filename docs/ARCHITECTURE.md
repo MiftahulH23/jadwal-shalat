@@ -28,6 +28,7 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 **`lib/`** (logika tanpa React)
 - `prayer.ts`: tipe, zona waktu, `getPrayerPhase`, `isJumat`, label, `locationLabel`
 - `settings.ts`: tipe `Settings`, default, `normalizeSettings`, koreksi, Ramadhan, kas, helper kajian
+- `tv.ts`: keputusan layar TV: penyiapan awal, layar shalat, slide, layar malam
 - `clock.ts`: `correctedNow()`, jam perangkat yang dikoreksi ke jam server
 - `astronomy.ts`: hitung waktu dari koordinat
 - `myquran.ts`: fetch API di server (`server-only`, `use cache`), elevasi Open-Meteo
@@ -40,15 +41,18 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 - `use-persisted-state.ts`: localStorage lewat `useSyncExternalStore`, `useHydrated`
 - `use-adzan-alerts.ts`: pop-up adzan/iqamah dan simulasi
 - `use-background-photo.ts`: URL foto latar, ikut berubah saat foto diganti
+- `use-audio-blocked.ts`: apakah browser masih menahan suara
 - `use-jumat-simulation.ts`, `use-phase-beeps.ts`, `use-now.ts`
 
 **`components/prayer/`**
 - Halaman: `prayer-dashboard`, `mosque-display`, `monthly-schedule`
 - Hero dan daftar: `countdown-hero`, `day-times`, `week-table`, `ramadan-card`, `kajian-list`
-- Layar TV: `tv-slides`, `ibadah-jumat-screen`
+- Layar TV: `layar-setup` (penyiapan awal), `tv-slides`, `ibadah-jumat-screen`
 - Pop-up: `adzan-modal`, `simulation-panel`
 - Pengaturan: `settings-dialog` (tab), `settings-sections` (isi tab), `settings-fields` (Stepper, Row, Field, RupiahInput), `backup-panel`, `city-picker`
 - Lain: `offline-notice`, `theme-toggle`
+
+**Tes**: `lib/*.test.ts` (Vitest), data contoh di `lib/test-week.ts`.
 
 **`components/ui/`**: hasil generate shadcn, hindari mengubahnya. **`public/sw.js`**: service worker, aktif hanya di build produksi.
 

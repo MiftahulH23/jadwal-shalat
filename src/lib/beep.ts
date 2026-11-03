@@ -14,19 +14,29 @@ function getContext() {
 }
 
 /**
- * Browsers only allow audio after a user gesture. Call once on mount: the first
- * click / key / touch anywhere unlocks audio for later automatic beeps.
+ * Browsers only allow audio after a user gesture. Call once on mount: a click / key / touch
+ * anywhere unlocks audio for later automatic beeps. Keeps listening, because not every event
+ * counts as a gesture (a touch only does when it ends) and audio can be suspended again later.
  */
 export function unlockAudioOnGesture() {
   if (typeof window === "undefined") return () => {}
   const unlock = () => {
-    getContext()
-    cleanup()
+    if (ctx?.state !== "running") getContext()
   }
-  const events = ["pointerdown", "keydown", "touchstart"] as const
-  const cleanup = () => events.forEach((e) => window.removeEventListener(e, unlock))
-  events.forEach((e) => window.addEventListener(e, unlock, { once: true, passive: true }))
-  return cleanup
+  const events = ["pointerdown", "keydown", "touchstart", "click"] as const
+  events.forEach((e) => window.addEventListener(e, unlock, { passive: true }))
+  return () => events.forEach((e) => window.removeEventListener(e, unlock))
+}
+
+/** Whether sound is being held back until a gesture. Only known once subscribed. */
+export function isAudioBlocked() {
+  return ctx !== null && ctx.state !== "running"
+}
+
+export function subscribeAudioState(listener: () => void) {
+  const ac = getContext()
+  ac?.addEventListener("statechange", listener)
+  return () => ac?.removeEventListener("statechange", listener)
 }
 
 type Beep = [duration: number, gap: number]

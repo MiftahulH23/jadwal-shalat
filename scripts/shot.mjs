@@ -19,6 +19,7 @@ const { values: args } = parseArgs({
     cycle: { type: "string" }, // TV slide cycle length in seconds, used with --offset
     offset: { type: "string" }, // seconds into that cycle
     settings: { type: "string" }, // JSON, or a path to a JSON file
+    fresh: { type: "boolean", default: false }, // no city chosen yet: the TV page shows its first-run setup
     photo: { type: "string" }, // background photo file, stored as is on the TV page (no compression)
     click: { type: "string" }, // exact button text to click after load
     wait: { type: "string", default: "2500" },
@@ -55,8 +56,11 @@ try {
   await page.setViewport({ width, height, isMobile: args.mobile, hasTouch: args.mobile })
 
   await page.evaluateOnNewDocument(
-    (settings, time) => {
+    (settings, time, fresh) => {
       if (settings) localStorage.setItem("jadwal-shalat:settings", JSON.stringify(settings))
+      if (!fresh && !localStorage.getItem("jadwal-shalat:city")) {
+        localStorage.setItem("jadwal-shalat:city", JSON.stringify({ id: "1301", lokasi: "KOTA JAKARTA" }))
+      }
       if (time) {
         const shift = time - Date.now()
         const RealDate = Date
@@ -72,7 +76,8 @@ try {
       }
     },
     readSettings(),
-    fakeTime() ?? (args.skew ? Date.now() + Number(args.skew) * 1000 : null)
+    fakeTime() ?? (args.skew ? Date.now() + Number(args.skew) * 1000 : null),
+    args.fresh
   )
 
   if (args.at) {

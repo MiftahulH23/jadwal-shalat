@@ -32,13 +32,11 @@ const COPY = {
     arabic: "اللهُ أَكْبَرُ",
     eyebrow: "Telah masuk waktu shalat",
     timeLabel: "Waktu adzan",
-    cta: "Baik, saya bersiap",
   },
   iqamah: {
     arabic: "قَدْ قَامَتِ الصَّلَاةُ",
     eyebrow: "Waktunya iqamah shalat",
     timeLabel: "Waktu iqamah",
-    cta: "Mari menunaikan shalat",
   },
 } as const
 
@@ -329,7 +327,7 @@ function AdzanCard({
             onClick={onClose}
             className="mt-6 h-11 w-full rounded-full bg-amber-300 font-semibold text-emerald-950 hover:bg-amber-200"
           >
-            {copy.cta}
+            Mari menunaikan shalat
           </Button>
           <p className="mt-2 h-4 text-[11px] text-white/50">
             {paused ? "Dijeda, arahkan kursor keluar untuk melanjutkan" : "Tertutup otomatis"}
