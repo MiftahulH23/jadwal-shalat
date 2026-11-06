@@ -3,7 +3,15 @@ import { connection } from "next/server"
 import { isKey, parseLayarData } from "@/lib/layar-data"
 import { bearer, fail, handle, readJson, rpc, withinLimit } from "@/lib/supabase-server"
 
-type Row = { peran: "tv" | "phone"; versi: number; foto: string | null; isi: unknown; diubah: string; tv_terlihat: string | null }
+type Row = {
+  peran: "tv" | "admin" | "editor" | "pending"
+  versi: number | null
+  foto: string | null
+  isi: unknown
+  diubah: string | null
+  tv_terlihat: string | null
+  ada_pin: boolean | null
+}
 
 const noStore = { "Cache-Control": "no-store" }
 
@@ -17,6 +25,7 @@ async function info(key: string) {
       photo: row.foto,
       updatedAt: row.diubah,
       tvSeenAt: row.tv_terlihat,
+      hasPin: row.ada_pin,
     }
   )
 }

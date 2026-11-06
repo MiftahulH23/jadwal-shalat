@@ -20,6 +20,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { EmergencyReset } from "@/components/prayer/emergency-reset"
 import { PhonePairing } from "@/components/prayer/phone-pairing"
 import { AdzanModal } from "@/components/prayer/adzan-modal"
 import { CityPicker } from "@/components/prayer/city-picker"
@@ -217,6 +218,8 @@ function MosqueScreen() {
   const [wakeUntil, setWakeUntil] = useState(0)
   const audioBlocked = useAudioBlocked()
   const [pairOpen, setPairOpen] = useState(false)
+  // After an emergency reset, the next scan makes a new main manager rather than a waiting phone.
+  const [wasReset, setWasReset] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { connected: phoneConnected, syncSoon } = useLayarSync({
     settings,
@@ -674,7 +677,7 @@ function MosqueScreen() {
             <DialogTitle>{phoneConnected ? "Tambah HP pengurus" : "Hubungkan ke HP"}</DialogTitle>
             <DialogDescription className="text-white/60">
               {phoneConnected
-                ? "Layar ini sudah terhubung. Pindai untuk menambah HP pengurus lain."
+                ? "Layar ini sudah terhubung. HP yang memindai perlu disetujui pengelola utama dulu."
                 : "Pengaturan layar ini ikut terkirim, jadi tidak perlu diisi ulang di HP."}
             </DialogDescription>
           </DialogHeader>
@@ -689,10 +692,14 @@ function MosqueScreen() {
               }}
               onPhoneAdded={() => {
                 setPairOpen(false)
-                toast.success("HP baru terhubung")
+                toast.success("QR sudah dipindai", {
+                  description: wasReset ? "HP itu sekarang pengelola utama." : "HP itu menunggu persetujuan pengelola utama.",
+                })
+                setWasReset(false)
               }}
             />
           )}
+          {pairOpen && phoneConnected && <EmergencyReset onReset={() => setWasReset(true)} />}
         </DialogContent>
       </Dialog>
 

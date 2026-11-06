@@ -46,7 +46,8 @@ Pemilik ingin memposting setelah fitur ini jadi. Rancangan: `docs/RANCANGAN-ATUR
 - [x] Tahap 2, sambungan: QR di TV, `/atur`, tahan refresh, tambah HP, TV kedua atau pengganti. Belum dicoba dengan kamera HP sungguhan
 - [x] Tahap 3, edit mingguan: simpan dari HP, TV mengecek tiap 5 menit, perubahan di TV ikut terkirim, konflik, konfirmasi perubahan waktu
 - [ ] Tahap 4, foto dari HP
-- [ ] Tahap 5, kendali dan riwayat
+- [x] Tahap 5a, kendali: pengelola utama, undangan per orang, persetujuan HP baru, batas 3 HP, reset darurat dengan PIN, pembersihan kunci TV yang hilang
+- [ ] Tahap 5b, riwayat: mengembalikan salah satu dari 5 versi terakhir, hapus data masjid dari HP
 - [ ] Tahap 6, publik: halaman privasi, batas pemakaian
 
 ## Akan dibahas lagi

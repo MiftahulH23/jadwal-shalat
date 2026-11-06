@@ -2,17 +2,18 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
-import { CheckCircle2Icon, LoaderCircleIcon, MonitorIcon, MoonStarIcon, Share2Icon, TriangleAlertIcon } from "lucide-react"
+import { CheckCircle2Icon, LoaderCircleIcon, MonitorIcon, MoonStarIcon, TriangleAlertIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ManagersCard } from "@/components/prayer/managers-card"
 import { SettingsTabs } from "@/components/prayer/settings-tabs"
 import { CityPicker } from "@/components/prayer/city-picker"
 import { useHydrated, usePersistedState } from "@/hooks/use-persisted-state"
 import { PHONE_LINKS_KEY } from "@/lib/layar-config"
-import { editUrl, newKey, readAturHash, type LayarData, type LayarSnapshot } from "@/lib/layar-data"
+import { newKey, readAturHash, type LayarData, type LayarSnapshot } from "@/lib/layar-data"
 import { dateAtOffset, locationLabel, type City } from "@/lib/prayer"
 import { canonical, timeAgo, timeChanges, tvSeenLabel } from "@/lib/layar-sync"
 import { DEFAULT_SETTINGS, isRamadan, normalizeSettings, type Settings } from "@/lib/settings"
@@ -128,7 +129,7 @@ function LinkList() {
   )
 }
 
-type QrInfo = { connected: boolean; name: string | null; snapshot: LayarSnapshot | null }
+type QrInfo = { connected: boolean; name: string | null; hasManager: boolean; full: boolean; snapshot: LayarSnapshot | null }
 
 /** After scanning a TV's QR code. */
 function PairFlow({ pair }: { pair: string }) {
@@ -138,6 +139,7 @@ function PairFlow({ pair }: { pair: string }) {
   const [busy, setBusy] = useState(false)
   const [city, setCity] = useState<City | null>(null)
   const [name, setName] = useState<string | null>(null)
+  const [who, setWho] = useState("")
 
   useEffect(() => {
     let cancelled = false
@@ -165,14 +167,15 @@ function PairFlow({ pair }: { pair: string }) {
   const claim = async (phoneKey: string, data: LayarData | null, label: { name: string; city: string }) => {
     setBusy(true)
     try {
-      const res = await postJson("/api/layar/klaim", { pair, phoneKey, data })
+      const res = await postJson("/api/layar/klaim", { pair, phoneKey, data, label: who.trim() || null })
       if (!res.ok) {
         toast.error(res.data.error ?? "Gagal menghubungkan.")
         if (res.status === 410) setProblem(res.data.error)
         return
       }
       save({ key: phoneKey, ...label })
-      toast.success("Terhubung", { description: "TV akan berubah dalam beberapa detik." })
+      if (res.data.role === "pending") toast.success("Permintaan terkirim", { description: "Tunggu disetujui pengelola utama." })
+      else toast.success("Terhubung", { description: "TV akan berubah dalam beberapa detik." })
       openLink(phoneKey)
     } catch {
       toast.error("Tidak ada koneksi internet.")
@@ -181,15 +184,45 @@ function PairFlow({ pair }: { pair: string }) {
     }
   }
 
-  // The TV already belongs to a mosque: this phone joins as another manager.
+  const whoField = (
+    <label className="block space-y-1.5">
+      <span className="text-sm font-medium">Nama Anda</span>
+      <Input value={who} maxLength={40} onChange={(e) => setWho(e.target.value)} placeholder="Contoh: Pak Ahmad" />
+      <span className="block text-xs text-muted-foreground">Supaya pengelola tahu HP ini milik siapa.</span>
+    </label>
+  )
+  const mosque = info.name || "masjid ini"
+
+  // The TV already belongs to a mosque: this phone asks to join, or (after a reset) takes over.
   if (info.connected) {
+    if (info.hasManager && info.full) {
+      return (
+        <Notice title={`Sudah 3 HP mengatur ${mosque}`}>
+          <p>Minta pengelola utama mencabut salah satu HP dulu, lalu pindai QR di TV lagi.</p>
+        </Notice>
+      )
+    }
     return (
-      <Notice title={`TV ini milik ${info.name || "sebuah masjid"}`} tone="ok">
-        <p>Bergabung untuk ikut mengatur layar masjid ini dari HP Anda.</p>
-        <Button disabled={busy} onClick={() => void claim(newKey(), null, { name: info.name ?? "", city: "" })}>
-          {busy && <LoaderCircleIcon className="animate-spin" />} Gabung sebagai pengurus
+      <form
+        className="space-y-4 rounded-2xl border bg-card p-5"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void claim(newKey(), null, { name: info.name ?? "", city: "" })
+        }}
+      >
+        <div>
+          <p className="font-semibold">{info.hasManager ? `Minta akses ke ${mosque}` : `Jadi pengelola utama ${mosque}`}</p>
+          <p className="text-sm text-muted-foreground">
+            {info.hasManager
+              ? "Pengelola utama masjid ini perlu menyetujui HP Anda dulu."
+              : "Layar ini baru direset dengan PIN darurat. HP pertama yang memindai menjadi pengelola utama."}
+          </p>
+        </div>
+        {whoField}
+        <Button type="submit" className="w-full" disabled={busy}>
+          {busy && <LoaderCircleIcon className="animate-spin" />} {info.hasManager ? "Minta akses" : "Jadi pengelola utama"}
         </Button>
-      </Notice>
+      </form>
     )
   }
 
@@ -224,6 +257,8 @@ function PairFlow({ pair }: { pair: string }) {
           <span className="text-sm font-medium">Nama masjid</span>
           <Input value={chosenName} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Masjid Al-Ikhlas" />
         </label>
+        {whoField}
+        <p className="text-xs text-muted-foreground">HP ini menjadi pengelola utama: bisa mengundang hingga 2 pengurus lain.</p>
         <Button type="submit" className="w-full" disabled={!chosenCity || busy}>
           {busy && <LoaderCircleIcon className="animate-spin" />}
           {chosenCity ? "Simpan dan hubungkan" : "Pilih kota dulu"}
@@ -251,7 +286,15 @@ function PairFlow({ pair }: { pair: string }) {
   )
 }
 
-type MosqueInfo = { version: number; data: LayarData | null; updatedAt: string; tvSeenAt: string | null }
+type Role = "admin" | "editor" | "pending"
+type MosqueInfo = {
+  role: Role
+  version: number
+  data: LayarData | null
+  updatedAt: string
+  tvSeenAt: string | null
+  hasPin: boolean | null
+}
 
 /** How often the phone page refreshes the status while it is open. */
 const STATUS_REFRESH_MS = 60_000
@@ -286,11 +329,19 @@ function MosqueView({ linkKey }: { linkKey: string }) {
     const refresh = () => {
       if (document.visibilityState !== "visible") return
       fetch("/api/layar/data", { headers: { Authorization: `Bearer ${linkKey}` }, cache: "no-store" })
-        .then((res) => (res.ok ? res.json() : null))
+        .then((res) => {
+          if (res.status === 401) setProblem("Akses HP ini sudah dicabut oleh pengelola utama.")
+          return res.ok ? res.json() : null
+        })
         .then((body: MosqueInfo | null) => {
           setNow(Date.now())
           // Only the status: the form keeps what is being typed.
-          if (body) setInfo((prev) => prev && { ...prev, tvSeenAt: body.tvSeenAt, updatedAt: body.updatedAt })
+          // A role change (approved, made main manager) loads everything; otherwise just the status.
+          if (body) {
+            setInfo((prev) =>
+              !prev || prev.role !== body.role ? body : { ...prev, tvSeenAt: body.tvSeenAt, updatedAt: body.updatedAt, hasPin: body.hasPin }
+            )
+          }
         })
         .catch(() => {})
     }
@@ -318,20 +369,15 @@ function MosqueView({ linkKey }: { linkKey: string }) {
     )
   }
   if (!info) return <Spinner />
-  if (!info.data) return <Notice title="Data masjid ini tidak bisa dibaca." />
-
-  const share = async () => {
-    const url = editUrl(window.location.origin, linkKey)
-    try {
-      if (navigator.share) await navigator.share({ title: `Atur layar ${name || "masjid"}`, url })
-      else {
-        await navigator.clipboard.writeText(url)
-        toast.success("Link disalin")
-      }
-    } catch {
-      // Sharing cancelled.
-    }
+  if (info.role === "pending") {
+    return (
+      <Notice title="Menunggu persetujuan pengelola utama" tone="ok">
+        <p>Minta pengelola utama masjid membuka halaman Atur dari HP-nya lalu menyetujui HP ini.</p>
+        <p>Halaman ini berubah sendiri setelah disetujui.</p>
+      </Notice>
+    )
   }
+  if (!info.data) return <Notice title="Data masjid ini tidak bisa dibaca." />
 
   return (
     <div className="space-y-4 pb-24">
@@ -358,16 +404,13 @@ function MosqueView({ linkKey }: { linkKey: string }) {
         onLost={setProblem}
       />
 
-      <div className="rounded-2xl border bg-card p-5">
-        <p className="font-semibold">Pengurus lain</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Siapa pun yang memegang link ini bisa mengubah tulisan di layar masjid. Bagikan hanya ke pengurus. Kalau link
-          tersebar, putuskan semua HP dari pengaturan di TV.
-        </p>
-        <Button variant="outline" className="mt-3 gap-2" onClick={() => void share()}>
-          <Share2Icon /> Bagikan ke pengurus lain
-        </Button>
-      </div>
+      {info.role === "admin" ? (
+        <ManagersCard linkKey={linkKey} mosque={name} hasPin={Boolean(info.hasPin)} onPinSet={() => setInfo({ ...info, hasPin: true })} />
+      ) : (
+        <Notice title="Anda pengurus masjid ini" tone="ok">
+          <p>Undangan dan pencabutan HP diatur oleh pengelola utama.</p>
+        </Notice>
+      )}
     </div>
   )
 }

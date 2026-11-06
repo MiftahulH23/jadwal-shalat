@@ -2,10 +2,11 @@ import { isKey, parseLayarData } from "@/lib/layar-data"
 import { fail, handle, readJson, rpc, syncEnabled, withinLimit } from "@/lib/supabase-server"
 
 /**
- * Phone: uses a QR code. Body: { pair, phoneKey, data? }.
- * - data given: a new mosque, unless the TV already belongs to one (then the phone joins it);
+ * Phone: uses a QR code. Body: { pair, phoneKey, data?, label? }.
+ * - data given: a new mosque, with this phone as its main manager;
+ * - the TV already belongs to a mosque: the phone asks to join and waits for the main manager;
  * - no data: the TV joins the mosque this phone's key belongs to.
- * Answers { ok: true }, or 410 when the QR code (or the phone's key) is not valid.
+ * Answers { role }, or 410 when the QR code (or the phone's key) is not valid.
  */
 export async function POST(request: Request) {
   return handle(async () => {
@@ -17,8 +18,14 @@ export async function POST(request: Request) {
     if (!(await withinLimit(request, "klaim", 20))) return fail(429, "Terlalu banyak percobaan. Coba lagi nanti.")
     if (data && !(await withinLimit(request, "masjid-baru", 5))) return fail(429, "Terlalu banyak masjid baru. Coba lagi nanti.")
 
-    const [row] = await rpc<{ display: string }>("layar_klaim", { p_pair: body.pair, p_phone_key: body.phoneKey, p_data: data })
+    const label = typeof body.label === "string" ? body.label : null
+    const [row] = await rpc<{ display: string; peran: string }>("layar_klaim", {
+      p_pair: body.pair,
+      p_phone_key: body.phoneKey,
+      p_data: data,
+      p_label: label,
+    })
     if (!row) return fail(410, "QR ini sudah tidak berlaku. Pindai QR yang sedang tampil di TV.")
-    return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } })
+    return Response.json({ role: row.peran }, { headers: { "Cache-Control": "no-store" } })
   })
 }

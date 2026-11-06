@@ -1,7 +1,7 @@
 import { isKey, parseLayarSnapshot } from "@/lib/layar-data"
 import { fail, handle, readJson, rpc, withinLimit } from "@/lib/supabase-server"
 
-type Row = { isi: unknown; terhubung: boolean; nama: string | null }
+type Row = { isi: unknown; terhubung: boolean; nama: string | null; punya_pengelola: boolean; penuh: boolean }
 
 /**
  * Phone, after scanning: what the QR code is for, without using it up. Body: { pair }.
@@ -16,7 +16,13 @@ export async function POST(request: Request) {
     const [row] = await rpc<Row>("layar_lihat_qr", { p_pair: body.pair })
     if (!row) return fail(410, "QR ini sudah tidak berlaku.")
     return Response.json(
-      { connected: row.terhubung, name: row.nama, snapshot: parseLayarSnapshot(row.isi) },
+      {
+        connected: row.terhubung,
+        name: row.nama,
+        hasManager: row.punya_pengelola,
+        full: row.penuh,
+        snapshot: parseLayarSnapshot(row.isi),
+      },
       { headers: { "Cache-Control": "no-store" } }
     )
   })
