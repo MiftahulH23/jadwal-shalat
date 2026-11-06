@@ -30,7 +30,7 @@ export function toBackupCode(backup: Backup) {
   return `JS1-${btoa(binary)}`
 }
 
-function parseCity(raw: unknown): City | null {
+export function parseCity(raw: unknown): City | null {
   if (!raw || typeof raw !== "object") return null
   const c = raw as Partial<City>
   if (typeof c.id !== "string" || !/^\d{4}$/.test(c.id) || typeof c.lokasi !== "string") return null

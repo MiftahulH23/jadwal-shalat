@@ -38,9 +38,20 @@ Setelah itu:
 
 - [ ] Halaman `/bulanan` bisa dipakai offline
 
+## Atur dari HP (sebelum diposting)
+
+Pemilik ingin memposting setelah fitur ini jadi. Rancangan: `docs/RANCANGAN-ATUR-DARI-HP.md`.
+
+- [x] Tahap 1, fondasi: skema terpasang di proyek Supabase, keamanan diuji dari luar, ukuran pengecekan diukur. Hanya paket gratis
+- [x] Tahap 2, sambungan: QR di TV, `/atur`, tahan refresh, tambah HP, TV kedua atau pengganti. Belum dicoba dengan kamera HP sungguhan
+- [x] Tahap 3, edit mingguan: simpan dari HP, TV mengecek tiap 5 menit, perubahan di TV ikut terkirim, konflik, konfirmasi perubahan waktu
+- [ ] Tahap 4, foto dari HP
+- [ ] Tahap 5, kendali dan riwayat
+- [ ] Tahap 6, publik: halaman privasi, batas pemakaian
+
 ## Akan dibahas lagi
 
-- Mengatur TV dari HP: pindai QR sekali, lalu edit dari link rahasia dan TV mengambil perubahannya sendiri. Butuh database kecil tanpa akun (misalnya Upstash Redis), jadi menunggu keputusan pemilik.
+- Menghemat sinkron jam di Vercel (sekarang 3 panggilan tiap 30 menit per perangkat, batas gratis tercapai di sekitar 230 TV menyala terus).
 
 ## Tidak direncanakan
 

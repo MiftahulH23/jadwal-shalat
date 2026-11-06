@@ -1,0 +1,67 @@
+// Keeping a connected TV and the server in step. No React, so it can be tested.
+
+import { parseLayarData, type LayarData } from "@/lib/layar-data"
+import { locationLabel, PRAYER_KEYS, TIME_KEYS, TIME_LABELS } from "@/lib/prayer"
+
+/** How often a connected TV asks whether there is something new, give or take JITTER_MS. */
+export const SYNC_MS = 5 * 60_000
+export const SYNC_JITTER_MS = 30_000
+
+/**
+ * One string per meaning, so data from the TV and from the server compare equal when they say the
+ * same thing (both are cleaned first; cleaning also fixes the order of the keys).
+ */
+export function canonical(data: unknown): string | null {
+  const clean = parseLayarData(data)
+  return clean && JSON.stringify(clean)
+}
+
+/** What the TV last agreed on with the server. */
+export type SyncedState = { version: number | null; synced: string | null }
+
+export type SyncStep =
+  /** Nothing to do. */
+  | { action: "idle" }
+  /** The server has something newer: take it. lostLocal: a change made on the TV is dropped for it. */
+  | { action: "pull"; lostLocal: boolean }
+  /** Only the TV changed: send it. */
+  | { action: "push" }
+
+/**
+ * The server wins when both changed: a TV is rarely edited once a phone manages it, and a phone's
+ * change is the deliberate one. The TV says so when its own change is dropped.
+ */
+export function decideSync(state: SyncedState, remoteVersion: number, local: string | null): SyncStep {
+  const changedHere = local !== null && local !== state.synced
+  if (state.version === null || remoteVersion > state.version) return { action: "pull", lostLocal: changedHere }
+  return changedHere ? { action: "push" } : { action: "idle" }
+}
+
+const minutes = (n: number) => `${n} menit`
+const signed = (n: number) => `${n > 0 ? "+" : ""}${n} menit`
+
+/**
+ * Changes that move prayer times on the screen, worded for a confirmation before saving from a phone:
+ * a wrong time is the worst mistake this app can make.
+ */
+export function timeChanges(before: LayarData, after: LayarData): string[] {
+  const lines: string[] = []
+  const place = (d: LayarData) => locationLabel(d.city)
+  if (place(before) !== place(after) || JSON.stringify(before.city.place) !== JSON.stringify(after.city.place)) {
+    lines.push(`Lokasi: ${place(before)} → ${place(after)}`)
+  }
+  for (const key of TIME_KEYS) {
+    const a = before.settings.corrections[key]
+    const b = after.settings.corrections[key]
+    if (a !== b) lines.push(`Koreksi ${TIME_LABELS[key]}: ${signed(a)} → ${signed(b)}`)
+  }
+  for (const key of PRAYER_KEYS) {
+    const a = before.settings.iqamah[key]
+    const b = after.settings.iqamah[key]
+    if (a !== b) lines.push(`Iqamah ${TIME_LABELS[key]}: ${minutes(a)} → ${minutes(b)}`)
+  }
+  const ka = before.settings.jumat.khutbahMinutes
+  const kb = after.settings.jumat.khutbahMinutes
+  if (ka !== kb) lines.push(`Durasi khutbah Jumat: ${minutes(ka)} → ${minutes(kb)}`)
+  return lines
+}

@@ -16,7 +16,11 @@ import {
   VolumeXIcon,
 } from "lucide-react"
 
+import { toast } from "sonner"
+
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { PhonePairing } from "@/components/prayer/phone-pairing"
 import { AdzanModal } from "@/components/prayer/adzan-modal"
 import { CityPicker } from "@/components/prayer/city-picker"
 import { IbadahJumatScreen, jumatPeople } from "@/components/prayer/ibadah-jumat-screen"
@@ -28,6 +32,7 @@ import { useAdzanAlerts } from "@/hooks/use-adzan-alerts"
 import { useAudioBlocked } from "@/hooks/use-audio-blocked"
 import { useBackgroundPhoto } from "@/hooks/use-background-photo"
 import { useJumatSimulation } from "@/hooks/use-jumat-simulation"
+import { useLayarSync } from "@/hooks/use-layar-sync"
 import { useNow } from "@/hooks/use-now"
 import { usePersistedState } from "@/hooks/use-persisted-state"
 import { usePhaseBeeps } from "@/hooks/use-phase-beeps"
@@ -52,6 +57,10 @@ import { getRamadanState } from "@/lib/ramadan"
 import type { parseBackup } from "@/lib/backup"
 import { isRamadan, jumatOfficers, splitRunningText } from "@/lib/settings"
 import { currentSlide, isNightTime, needsLayarSetup, prayingNow } from "@/lib/tv"
+
+/** Buttons of the on-screen control bar: one size and shape for all, readable from a distance. */
+const TOOL =
+  "h-[max(2.5rem,5vh)] gap-[0.5em] rounded-full px-[1em] text-[max(0.875rem,1.6vh)] text-white hover:bg-white/10 hover:text-white focus-visible:ring-amber-300/60 [&_svg:not([class*=size-])]:size-[1.15em]"
 
 /** Positions the night clock moves between, one per minute. */
 const NIGHT_SPOTS: React.CSSProperties[] = [
@@ -163,9 +172,15 @@ export function MosqueDisplay() {
   if (needsLayarSetup(storedCity, settings)) {
     return (
       <LayarSetup
+        snapshot={{ settings }}
         onDone={(city, mosqueName) => {
           if (mosqueName) setSettings({ ...settings, mosqueName })
           setStoredCity(city)
+        }}
+        onConnected={(data) => {
+          setSettings(data.settings)
+          setStoredCity(data.city)
+          toast.success("Terhubung ke HP", { description: "Pengaturan dari HP sudah dipakai di layar ini." })
         }}
       />
     )
@@ -201,6 +216,17 @@ function MosqueScreen() {
   // Night dimming is lifted for a minute after the mouse moves or a remote key is pressed.
   const [wakeUntil, setWakeUntil] = useState(0)
   const audioBlocked = useAudioBlocked()
+  const [pairOpen, setPairOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const { connected: phoneConnected } = useLayarSync({
+    settings,
+    city,
+    apply: (data) => {
+      setSettings(data.settings)
+      setCity(data.city)
+    },
+    paused: settingsOpen || pairOpen,
+  })
 
   useWakeLock()
 
@@ -571,77 +597,102 @@ function MosqueScreen() {
         )}
       </AnimatePresence>
 
-      {/* On-screen controls (auto-hide) */}
+      {/* On-screen controls (auto-hide), over the running text: the least important part of the screen.
+          Left is where (leave, location), right is how the screen behaves. */}
       <div
         className={cn(
-          "absolute top-4 left-1/2 z-30 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/10 bg-black/60 p-1.5 backdrop-blur transition-opacity duration-500",
-          controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+          "absolute inset-x-0 bottom-0 z-30 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 bg-[#04110f]/95 px-[3vw] py-[1.2vh] backdrop-blur transition duration-500 motion-reduce:transition-none",
+          controlsVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
         )}
       >
-        <Button variant="ghost" className="gap-2 rounded-full text-white hover:bg-white/10 hover:text-white" render={<Link href="/" />} nativeButton={false}>
-          <ArrowLeftIcon /> Keluar
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full text-white hover:bg-white/10 hover:text-white"
-          aria-label={soundOn ? "Matikan suara" : "Nyalakan suara"}
-          onClick={() => {
-            setSoundOn(!soundOn)
-            if (!soundOn) playBeeps("test")
-          }}
-        >
-          {soundOn ? <Volume2Icon /> : <VolumeXIcon />}
-        </Button>
-        <CityPicker
-          value={city}
-          onChange={setCity}
-          className="h-9 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white dark:bg-transparent dark:hover:bg-white/10"
-        />
-        <SettingsDialog
-          settings={settings}
-          onSave={setSettings}
-          ramadanNow={isRamadan("auto", now, tz)}
-          backup={{ city, soundOn }}
-          onRestore={restoreBackup}
-          today={today}
-        />
+        <div className="flex min-w-0 items-center gap-2">
+          <Button variant="ghost" className={TOOL} render={<Link href="/" />} nativeButton={false}>
+            <ArrowLeftIcon /> Keluar
+          </Button>
+          <span aria-hidden className="h-6 w-px shrink-0 bg-white/15" />
+          <CityPicker
+            value={city}
+            onChange={setCity}
+            className={cn(TOOL, "max-w-[30vw] border-0 bg-transparent font-normal shadow-none backdrop-blur-none dark:bg-transparent dark:hover:bg-white/10 sm:max-w-[30vw] [&_svg]:text-amber-300")}
+          />
+        </div>
+
         {/* Simulation buttons only when enabled in Pengaturan > Layar */}
         {settings.showSimulation && (
-          <>
-          <span className="mx-1 h-6 w-px bg-white/15" />
-          <Button
-            variant="ghost"
-            className="gap-2 rounded-full text-emerald-200 hover:bg-emerald-400/15 hover:text-emerald-100"
-            onClick={() => simulate("adzan")}
-          >
-            <MoonStarIcon /> Simulasi adzan
-          </Button>
-          <Button
-            variant="ghost"
-            className="gap-2 rounded-full text-amber-200 hover:bg-amber-400/15 hover:text-amber-100"
-            onClick={() => simulate("iqamah")}
-          >
-            <BellRingIcon /> Simulasi iqamah
-          </Button>
-          <Button
-            variant="ghost"
-            className="gap-2 rounded-full text-teal-200 hover:bg-teal-400/15 hover:text-teal-100"
-            onClick={simulateJumat}
-          >
-            <LandmarkIcon /> Simulasi Jumat
-          </Button>
-          </>
+          <div className="flex items-center gap-1 rounded-full bg-white/5 p-1">
+            <Button variant="ghost" className={cn(TOOL, "h-[max(2rem,4vh)] text-emerald-200")} onClick={() => simulate("adzan")}>
+              <MoonStarIcon /> <span className="max-2xl:sr-only">Simulasi adzan</span>
+            </Button>
+            <Button variant="ghost" className={cn(TOOL, "h-[max(2rem,4vh)] text-amber-200")} onClick={() => simulate("iqamah")}>
+              <BellRingIcon /> <span className="max-2xl:sr-only">Simulasi iqamah</span>
+            </Button>
+            <Button variant="ghost" className={cn(TOOL, "h-[max(2rem,4vh)] text-teal-200")} onClick={simulateJumat}>
+              <LandmarkIcon /> <span className="max-2xl:sr-only">Simulasi Jumat</span>
+            </Button>
+          </div>
         )}
-        <span className="mx-1 h-6 w-px bg-white/15" />
-        <Button
-          variant="ghost"
-          className="gap-2 rounded-full text-white hover:bg-white/10 hover:text-white"
-          onClick={toggleFullscreen}
-        >
-          {fullscreen ? <ShrinkIcon /> : <ExpandIcon />} {fullscreen ? "Keluar layar penuh" : "Layar penuh"}
-        </Button>
+
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            className={TOOL}
+            aria-pressed={soundOn}
+            onClick={() => {
+              setSoundOn(!soundOn)
+              if (!soundOn) playBeeps("test")
+            }}
+          >
+            {soundOn ? <Volume2Icon /> : <VolumeXIcon className="text-white/50" />} {soundOn ? "Suara aktif" : "Suara mati"}
+          </Button>
+          <Button variant="ghost" className={TOOL} onClick={() => setPairOpen(true)}>
+            <SmartphoneIcon /> Atur dari HP
+            {phoneConnected && <span aria-label="terhubung" className="size-2 rounded-full bg-emerald-400" />}
+          </Button>
+          <SettingsDialog
+            settings={settings}
+            onSave={setSettings}
+            ramadanNow={isRamadan("auto", now, tz)}
+            backup={{ city, soundOn }}
+            onRestore={restoreBackup}
+            today={today}
+            onOpenChange={setSettingsOpen}
+            trigger="tv"
+            triggerClassName={TOOL}
+          />
+          <Button variant="ghost" className={TOOL} onClick={toggleFullscreen}>
+            {fullscreen ? <ShrinkIcon /> : <ExpandIcon />} {fullscreen ? "Keluar layar penuh" : "Layar penuh"}
+          </Button>
+        </div>
       </div>
+
+      {/* QR code for a phone; only mounted while open, so the TV calls the server only then */}
+      <Dialog open={pairOpen} onOpenChange={setPairOpen}>
+        <DialogContent className="border-white/10 bg-[#0b1f1c] text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{phoneConnected ? "Tambah HP pengurus" : "Hubungkan ke HP"}</DialogTitle>
+            <DialogDescription className="text-white/60">
+              {phoneConnected
+                ? "Layar ini sudah terhubung. Pindai untuk menambah HP pengurus lain."
+                : "Pengaturan layar ini ikut terkirim, jadi tidak perlu diisi ulang di HP."}
+            </DialogDescription>
+          </DialogHeader>
+          {pairOpen && (
+            <PhonePairing
+              snapshot={{ settings, city }}
+              onConnected={(data) => {
+                setSettings(data.settings)
+                setCity(data.city)
+                setPairOpen(false)
+                toast.success("Terhubung ke HP", { description: "Pengaturan sekarang bisa diubah dari HP." })
+              }}
+              onPhoneAdded={() => {
+                setPairOpen(false)
+                toast.success("HP baru terhubung")
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Adzan / iqamah pop-up, enlarged for TV screens */}
       <AdzanModal alert={alert} now={now} onClose={closeAlertWithJumat} scale={popupScale} />

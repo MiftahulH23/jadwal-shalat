@@ -11,6 +11,17 @@
 | `/api/waktu` | Jam server, untuk koreksi jam perangkat | `lib/clock.ts` |
 | `/api/jadwal/[id]?hari=&lat=&lng=` | Jadwal 1–62 hari | `lib/myquran.ts` |
 | `/api/jadwal/[id]/bulan?tahun=&bulan=&lat=&lng=` | Jadwal sebulan | `lib/myquran.ts` |
+| `/atur` | Mengatur layar TV dari HP (`#p=` QR, `#k=` link HP) | `atur-page.tsx` |
+| `/api/layar/sambung`, `qr`, `klaim`, `data` | Atur dari HP, ke Supabase dengan kunci rahasia | `lib/supabase-server.ts` |
+
+## Atur dari HP (Supabase)
+
+Rancangan dan aturannya: `docs/RANCANGAN-ATUR-DARI-HP.md`. Fitur pilihan; TV yang tidak dihubungkan tidak memanggil Supabase.
+
+- Database: `supabase/migrations/`, diuji di `supabase/layar.test.ts` (PGlite). Tabel di skema `layar` yang tidak terbuka lewat API.
+- TV membaca langsung ke Supabase dengan kunci publishable (`lib/layar-public.ts`, hanya `layar_cek` dan `layar_ambil`). Menulis selalu lewat `/api/layar/*`.
+- Kunci rahasia: `SUPABASE_SECRET_KEY` di `.env.local` dan Vercel. `LAYAR_SYNC_ENABLED=false` menutup QR dan masjid baru.
+- Alamat proyek dan kunci publishable ada di `lib/layar-config.ts`.
 
 ## Alur data
 
@@ -29,6 +40,7 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 - `prayer.ts`: tipe, zona waktu, `getPrayerPhase`, `isJumat`, label, `locationLabel`
 - `settings.ts`: tipe `Settings`, default, `normalizeSettings`, koreksi, Ramadhan, kas, helper kajian
 - `tv.ts`: keputusan layar TV: penyiapan awal, layar shalat, slide, layar malam
+- `layar-data.ts` (data bersama, kunci, link), `layar-pairing.ts` (kapan QR dipakai ulang atau diperbarui), `layar-sync.ts` (tarik atau kirim, konfirmasi perubahan waktu), `layar-public.ts`, `layar-config.ts`, `supabase-server.ts` (khusus server)
 - `clock.ts`: `correctedNow()`, jam perangkat yang dikoreksi ke jam server
 - `astronomy.ts`: hitung waktu dari koordinat
 - `myquran.ts`: fetch API di server (`server-only`, `use cache`), elevasi Open-Meteo
@@ -42,14 +54,16 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 - `use-adzan-alerts.ts`: pop-up adzan/iqamah dan simulasi
 - `use-background-photo.ts`: URL foto latar, ikut berubah saat foto diganti
 - `use-audio-blocked.ts`: apakah browser masih menahan suara
+- `use-layar-sync.ts`: TV yang terhubung ke HP: cek tiap 5 menit, ambil perubahan dari HP, kirim perubahan dari TV
 - `use-jumat-simulation.ts`, `use-phase-beeps.ts`, `use-now.ts`
 
 **`components/prayer/`**
 - Halaman: `prayer-dashboard`, `mosque-display`, `monthly-schedule`
 - Hero dan daftar: `countdown-hero`, `day-times`, `week-table`, `ramadan-card`, `kajian-list`
-- Layar TV: `layar-setup` (penyiapan awal), `tv-slides`, `ibadah-jumat-screen`
+- Layar TV: `layar-setup` (penyiapan awal), `phone-pairing` (QR), `tv-slides`, `ibadah-jumat-screen`
+- HP: `atur-page`
 - Pop-up: `adzan-modal`, `simulation-panel`
-- Pengaturan: `settings-dialog` (tab), `settings-sections` (isi tab), `settings-fields` (Stepper, Row, Field, RupiahInput), `backup-panel`, `city-picker`
+- Pengaturan: `settings-dialog` (jendela), `settings-tabs` (tab, dipakai juga di `/atur`), `settings-sections` (isi tab), `settings-fields` (Stepper, Row, Field, RupiahInput), `backup-panel`, `city-picker`
 - Lain: `offline-notice`, `theme-toggle`
 
 **Tes**: `lib/*.test.ts` (Vitest), data contoh di `lib/test-week.ts`.
@@ -64,7 +78,7 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 
 ## Kunci localStorage
 
-`jadwal-shalat:city`, `:sound` (default hidup), `:settings`, `:cache`, `:clock-offset`
+`jadwal-shalat:city`, `:sound` (default hidup), `:settings`, `:cache`, `:clock-offset`. Atur dari HP: `:layar` (kunci TV, tetap selamanya), `:layar-qr` (QR yang sedang tampil), `:atur` (daftar masjid di HP)
 
 ## IndexedDB
 

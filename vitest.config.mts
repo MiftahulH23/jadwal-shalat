@@ -7,5 +7,5 @@ process.env.TZ = "America/New_York"
 
 export default defineConfig({
   resolve: { alias: { "@": resolve(import.meta.dirname, "src") } },
-  test: { include: ["src/**/*.test.ts"] },
+  test: { include: ["src/**/*.test.ts", "supabase/**/*.test.ts"] },
 })

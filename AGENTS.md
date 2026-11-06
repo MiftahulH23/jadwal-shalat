@@ -1,6 +1,6 @@
 # Jadwal Shalat
 
-Website jadwal shalat Indonesia + layar TV masjid. Next.js 16 (App Router, Cache Components), React 19, TypeScript, Tailwind 4, shadcn/ui (Base UI, bukan Radix). Tanpa database: pengaturan di localStorage per browser dan per alamat website.
+Website jadwal shalat Indonesia + layar TV masjid. Next.js 16 (App Router, Cache Components), React 19, TypeScript, Tailwind 4, shadcn/ui (Base UI, bukan Radix). Pengaturan di localStorage per browser dan per alamat website. Satu-satunya database: Supabase (paket gratis) untuk fitur pilihan Atur dari HP.
 
 - Produksi: https://jadwal-shalat-omega.vercel.app (auto-deploy dari `main`)
 - Repo: https://github.com/MiftahulH23/jadwal-shalat
@@ -9,7 +9,7 @@ Website jadwal shalat Indonesia + layar TV masjid. Next.js 16 (App Router, Cache
 
 - Balas pengguna dalam Bahasa Indonesia. Teks UI berbahasa Indonesia; komentar kode dan nama variabel berbahasa Inggris.
 - Commit hanya kalau diminta, tanpa `Co-Authored-By` dan tanpa `Claude-Session`. Pengguna yang melakukan push.
-- Jangan menambah database, akun, atau backend penyimpanan tanpa persetujuan.
+- Jangan menambah database, akun, atau backend penyimpanan lain tanpa persetujuan. Supabase hanya untuk Atur dari HP dan hanya paket gratis.
 - Salah hitung waktu shalat adalah kesalahan paling fatal: perubahan logika waktu wajib dicek terhadap `docs/DOMAIN.md`.
 - Setelah mengubah kode: `npm run check`. Untuk perubahan tampilan, buktikan dengan `npm run shot` (lihat `docs/VERIFY.md`).
 
