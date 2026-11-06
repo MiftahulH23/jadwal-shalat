@@ -8,7 +8,7 @@
 | `/layar` | Layar TV masjid | `mosque-display.tsx` |
 | `/bulanan` | Jadwal sebulan, cetak, PDF, CSV (masih butuh internet) | `monthly-schedule.tsx` |
 | `/api/kota` | Daftar kota | `lib/myquran.ts` |
-| `/api/waktu` | Jam server, untuk koreksi jam perangkat | `lib/clock.ts` |
+| `/waktu.txt` | File statis; header `Date`-nya dipakai untuk koreksi jam perangkat | `lib/clock.ts` |
 | `/api/jadwal/[id]?hari=&lat=&lng=` | Jadwal 1–62 hari | `lib/myquran.ts` |
 | `/api/jadwal/[id]/bulan?tahun=&bulan=&lat=&lng=` | Jadwal sebulan | `lib/myquran.ts` |
 | `/atur` | Mengatur layar TV dari HP (`#p=` QR, `#k=` link HP) | `atur-page.tsx` |

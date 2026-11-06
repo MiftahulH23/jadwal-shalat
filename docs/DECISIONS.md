@@ -16,6 +16,7 @@ Keputusan pemilik proyek dan alasannya. Jangan membaliknya tanpa bertanya.
 | Baris tanggal harian 7 kolom selebar penuh | Permintaan pemilik |
 | Kode dihitung sendiri (`astronomy.ts`), bukan library `adhan` | Butuh koreksi ketinggian dan parameter Kemenag; library tidak menyediakannya |
 | Jam dikoreksi otomatis ke jam server | Laptop pemilik tertinggal beberapa detik dari HP; adzan ikut terlambat |
+| Jam server dibaca dari header `Date` file statis, bukan dari fungsi `/api/waktu` | Fungsi memakai jatah 1 juta panggilan per bulan di Vercel gratis (habis di sekitar 230 TV); file statis hanya memakai transfer data. Ketepatan sekitar 0,25 detik cukup |
 | Foto latar disimpan di browser (IndexedDB), bukan diunggah | Tetap tanpa database dan biaya, bisa offline. Akibatnya dipasang per perangkat |
 | Supabase untuk fitur pilihan Atur dari HP, tanpa akun pengguna (mengubah keputusan "tanpa database" hanya untuk fitur ini) | Mengatur TV itu ribet dan data berubah tiap minggu. TV tetap membaca dari browsernya, jadi jadwal tidak bergantung pada server. TV mengecek versi berkala, tanpa Realtime di versi pertama. Pemilik hanya mau memakai paket gratis |
 | Pengelola utama, bukan link bersama; TV tidak bisa memutus HP; reset darurat dengan PIN | Usul pemilik: orang iseng yang memegang link atau berdiri di depan TV tidak boleh bisa mengeluarkan pengurus. Batas 3 HP per masjid juga permintaan pemilik |

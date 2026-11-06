@@ -1,0 +1,1 @@
+Jadwal Shalat: jam server dibaca dari header Date file ini (lihat src/lib/clock.ts).

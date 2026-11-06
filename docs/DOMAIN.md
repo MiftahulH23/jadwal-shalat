@@ -24,7 +24,7 @@ Ditentukan dari provinsi (`zoneForRegion`), bukan zona perangkat: WIT = Papua, M
 
 ## Sumber jam
 
-Jam perangkat bisa meleset (laptop pemilik pernah tertinggal 24 detik), padahal adzan dan iqamah mengikutinya. Karena itu kode browser memakai `correctedNow()` dari `lib/clock.ts`, **jangan `Date.now()` langsung**. Selisih dengan jam server (`/api/waktu`) diukur saat halaman dibuka, tiap 30 menit, saat tab kembali aktif, dan saat internet kembali. Selisihnya disimpan, jadi tetap dipakai saat offline. Kalau belum pernah berhasil sinkron, jam perangkat dipakai apa adanya.
+Jam perangkat bisa meleset (laptop pemilik pernah tertinggal 24 detik), padahal adzan dan iqamah mengikutinya. Karena itu kode browser memakai `correctedNow()` dari `lib/clock.ts`, **jangan `Date.now()` langsung**. Selisih dengan jam server diukur dari header `Date` file statis `/waktu.txt` (tidak memakai fungsi Vercel; 4 permintaan dengan jeda 330 ms supaya ketepatannya di bawah 1 detik walau header hanya berisi detik). Diukur saat halaman dibuka, tiap 30 menit, saat tab kembali aktif, dan saat internet kembali. Selisihnya disimpan, jadi tetap dipakai saat offline. Kalau belum pernah berhasil sinkron, jam perangkat dipakai apa adanya.
 
 ## Fase hitung mundur (`getPrayerPhase`)
 

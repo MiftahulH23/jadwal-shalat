@@ -72,6 +72,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url)
   if (request.method !== "GET" || url.origin !== self.location.origin) return
 
+  // The clock is read from this file's Date header (src/lib/clock.ts): never answer it from a cache.
+  if (url.pathname === "/waktu.txt") return
+
   // Schedule APIs: the app handles offline itself (stored month + local calculation).
   if (url.pathname.startsWith("/api/")) {
     if (url.pathname === "/api/kota") event.respondWith(networkFirst(request, ASSETS))

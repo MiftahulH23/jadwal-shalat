@@ -83,7 +83,7 @@ try {
   if (args.at) {
     // Clock correction would undo a fake clock.
     await page.setRequestInterception(true)
-    page.on("request", (req) => (req.url().includes("/api/waktu") ? req.abort() : req.continue()))
+    page.on("request", (req) => (req.url().includes("/waktu.txt") ? req.abort() : req.continue()))
   }
 
   await page.goto(`${args.base}/${args.page}`, { waitUntil: "networkidle0", timeout: 60_000 })

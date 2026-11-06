@@ -50,10 +50,6 @@ Pemilik ingin memposting setelah fitur ini jadi. Rancangan: `docs/RANCANGAN-ATUR
 - [x] Tahap 5b, riwayat: pengelola utama mengembalikan salah satu dari 5 versi terakhir (disimpan sebagai versi baru), dan menghapus data masjid beserta fotonya
 - [x] Tahap 6, publik: halaman `/privasi`, paling banyak 500 masjid, foto paling besar 1,5 MB, masjid 12 bulan tidak aktif dihapus otomatis beserta fotonya
 
-## Akan dibahas lagi
-
-- Menghemat sinkron jam di Vercel (sekarang 3 panggilan tiap 30 menit per perangkat, batas gratis tercapai di sekitar 230 TV menyala terus).
-
 ## Tidak direncanakan
 
 - Suara adzan.
