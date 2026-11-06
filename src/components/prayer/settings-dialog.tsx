@@ -37,12 +37,28 @@ type Props = {
   today: string
   /** Told when the dialog opens and closes, e.g. to hold back changes from a phone meanwhile. */
   onOpenChange?: (open: boolean) => void
+  /** A new photo (or none) was saved on this device. */
+  onPhotoSaved?: (photo: Blob | null) => void
+  /** Replaces the note under the photo, e.g. on a TV whose photo also goes to its phones. */
+  photoNote?: string
   /** Look of the button: a round icon (home page), or icon and label (TV control bar). */
   trigger?: "icon" | "tv"
   triggerClassName?: string
 }
 
-export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore, today, onOpenChange, trigger = "icon", triggerClassName }: Props) {
+export function SettingsDialog({
+  settings,
+  onSave,
+  ramadanNow,
+  backup,
+  onRestore,
+  today,
+  onOpenChange,
+  onPhotoSaved,
+  photoNote,
+  trigger = "icon",
+  triggerClassName,
+}: Props) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(settings)
   const [photoChange, setPhotoChange] = useState<PhotoChange>(undefined)
@@ -96,6 +112,7 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
         toast.error("Foto gagal disimpan. Pastikan browser tidak dalam mode penyamaran.")
         return
       }
+      onPhotoSaved?.(photoChange?.blob ?? null)
     }
     onSave(draft)
     close()
@@ -142,7 +159,7 @@ export function SettingsDialog({ settings, onSave, ramadanNow, backup, onRestore
           ramadanNow={ramadanNow}
           today={today}
           locationFallback={locationLabel(backup.city)}
-          photo={<BackgroundSection draft={draft} setDraft={setDraft} change={photoChange} onChange={changePhoto} />}
+          photo={<BackgroundSection draft={draft} setDraft={setDraft} change={photoChange} onChange={changePhoto} note={photoNote} />}
           simulation
           backup={
             <BackupPanel

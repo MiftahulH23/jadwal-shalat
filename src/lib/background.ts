@@ -90,6 +90,29 @@ export async function compressPhoto(file: File) {
   }
 }
 
+/**
+ * A photo small enough to send to the server: lower JPEG quality first, then a smaller picture, never
+ * below what covers a Full HD screen.
+ */
+export async function fitForUpload(photo: Blob, maxBytes: number) {
+  if (photo.size <= maxBytes) return photo
+  const image = await createImageBitmap(photo)
+  try {
+    for (const [quality, scale] of [[0.7, 1], [0.6, 1], [0.6, 0.75], [0.55, 0.6]] as const) {
+      const fit = Math.max(scale, COVER_WIDTH / image.width, COVER_HEIGHT / image.height)
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.round(image.width * Math.min(1, fit))
+      canvas.height = Math.round(image.height * Math.min(1, fit))
+      canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height)
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality))
+      if (blob && blob.size <= maxBytes) return blob
+    }
+  } finally {
+    image.close()
+  }
+  throw new Error("Foto terlalu besar untuk dikirim. Coba foto lain.")
+}
+
 export function blobToDataUrl(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()

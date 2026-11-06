@@ -7,6 +7,8 @@ import type { TvLink } from "@/components/prayer/phone-pairing"
 import { usePersistedState } from "@/hooks/use-persisted-state"
 import { TV_LINK_KEY } from "@/lib/layar-config"
 import { parseLayarData, type LayarData } from "@/lib/layar-data"
+import { loadBackground, saveBackground } from "@/lib/background"
+import { downloadPhoto, sendPhoto } from "@/lib/layar-photo"
 import { checkLayar, fetchLayar } from "@/lib/layar-public"
 import { canonical, decideSync, SYNC_JITTER_MS, SYNC_MS } from "@/lib/layar-sync"
 import type { City } from "@/lib/prayer"
@@ -53,13 +55,34 @@ export function useLayarSync({ settings, city, apply, paused }: Options) {
     const current = readLink()
     if (!current?.connected || busy.current) return
     busy.current = true
+    // Always on top of what is stored now, so one step does not undo another made in the same round.
+    const update = (patch: Partial<TvLink>) => setLink({ ...(readLink() ?? current), ...patch })
     try {
       const check = await checkLayar(current.tvKey)
       if (!check) {
         // The mosque was deleted from a phone: this TV carries on with its own settings.
-        setLink({ ...current, connected: false, version: null, synced: null })
+        update({ connected: false, version: null, synced: null, photo: undefined, photoPending: false })
         toast.info("Layar ini tidak lagi terhubung ke HP", { description: "Pengaturan terakhir tetap dipakai." })
         return
+      }
+
+      // The photo travels apart from the settings and is recognised by its path on the server.
+      if (!latest.current.paused) {
+        try {
+          const known = readLink() ?? current
+          if (known.photoPending) {
+            update({ photo: await sendPhoto(current.tvKey, await loadBackground().catch(() => null)), photoPending: false })
+          } else if (known.photo === undefined && !check.photo) {
+            // Just connected, and the mosque has no photo yet: this TV's own photo, if any, becomes it.
+            const own = await loadBackground().catch(() => null)
+            update({ photo: own ? await sendPhoto(current.tvKey, own) : null })
+          } else if (known.photo !== check.photo) {
+            await saveBackground(check.photo ? await downloadPhoto(check.photo) : null)
+            update({ photo: check.photo })
+          }
+        } catch {
+          // Tried again at the next check; the settings below still go through.
+        }
       }
 
       const step = decideSync({ version: current.version, synced: current.synced ?? null }, check.version, latest.current.local)
@@ -69,7 +92,7 @@ export function useLayarSync({ settings, city, apply, paused }: Options) {
         const data = fetched && parseLayarData(fetched.data)
         if (!fetched || !data) return
         // Recorded before applying, so applying is not mistaken for a change made on the TV.
-        setLink({ ...current, version: fetched.version, synced: canonical(data) })
+        update({ version: fetched.version, synced: canonical(data) })
         latest.current.apply(data)
         if (lostLocal) {
           toast.warning("Pengaturan diperbarui dari HP", {
@@ -94,7 +117,7 @@ export function useLayarSync({ settings, city, apply, paused }: Options) {
         })
         if (res.ok) {
           const { version } = await res.json()
-          setLink({ ...current, version, synced: sending })
+          update({ version, synced: sending })
         } else if (res.status === 409) {
           // A phone saved first: its data wins.
           await pull(true)
@@ -159,5 +182,21 @@ export function useLayarSync({ settings, city, apply, paused }: Options) {
     void sync()
   }, [connected, sync])
 
-  return { connected, syncSoon }
+  /** A photo was saved in Pengaturan on this TV: send it, or send it later if that fails. */
+  const pushPhoto = useCallback(
+    async (photo: Blob | null) => {
+      const current = readLink()
+      if (!current?.connected) return
+      try {
+        const path = await sendPhoto(current.tvKey, photo)
+        setLink({ ...(readLink() ?? current), photo: path, photoPending: false })
+      } catch {
+        setLink({ ...(readLink() ?? current), photoPending: true })
+        toast.warning("Foto belum terkirim ke server", { description: "Dikirim otomatis saat internet tersambung." })
+      }
+    },
+    [setLink]
+  )
+
+  return { connected, syncSoon, pushPhoto }
 }

@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ManagersCard } from "@/components/prayer/managers-card"
+import { BackgroundSection, type PhotoChange } from "@/components/prayer/settings-sections"
 import { SettingsTabs } from "@/components/prayer/settings-tabs"
 import { CityPicker } from "@/components/prayer/city-picker"
 import { useHydrated, usePersistedState } from "@/hooks/use-persisted-state"
-import { PHONE_LINKS_KEY } from "@/lib/layar-config"
+import { PHONE_LINKS_KEY, photoUrl } from "@/lib/layar-config"
+import { sendPhoto } from "@/lib/layar-photo"
 import { newKey, readAturHash, type LayarData, type LayarSnapshot } from "@/lib/layar-data"
 import { dateAtOffset, locationLabel, type City } from "@/lib/prayer"
 import { canonical, timeAgo, timeChanges, tvSeenLabel } from "@/lib/layar-sync"
@@ -294,6 +296,8 @@ type MosqueInfo = {
   updatedAt: string
   tvSeenAt: string | null
   hasPin: boolean | null
+  /** Path of the background photo on the server. */
+  photo: string | null
 }
 
 /** How often the phone page refreshes the status while it is open. */
@@ -339,7 +343,9 @@ function MosqueView({ linkKey }: { linkKey: string }) {
           // A role change (approved, made main manager) loads everything; otherwise just the status.
           if (body) {
             setInfo((prev) =>
-              !prev || prev.role !== body.role ? body : { ...prev, tvSeenAt: body.tvSeenAt, updatedAt: body.updatedAt, hasPin: body.hasPin }
+              !prev || prev.role !== body.role
+                ? body
+                : { ...prev, tvSeenAt: body.tvSeenAt, updatedAt: body.updatedAt, hasPin: body.hasPin, photo: body.photo }
             )
           }
         })
@@ -400,7 +406,9 @@ function MosqueView({ linkKey }: { linkKey: string }) {
         linkKey={linkKey}
         version={info.version}
         data={info.data}
-        onSaved={(version, data) => setInfo({ ...info, version, data, updatedAt: new Date().toISOString() })}
+        photo={info.photo}
+        onSaved={(version, data) => setInfo((prev) => prev && { ...prev, version, data, updatedAt: new Date().toISOString() })}
+        onPhotoSaved={(photo) => setInfo((prev) => prev && { ...prev, photo, updatedAt: new Date().toISOString() })}
         onLost={setProblem}
       />
 
@@ -422,13 +430,17 @@ function MosqueEditor({
   linkKey,
   version,
   data,
+  photo,
   onSaved,
+  onPhotoSaved,
   onLost,
 }: {
   linkKey: string
   version: number
   data: LayarData
+  photo: string | null
   onSaved: (version: number, data: LayarData) => void
+  onPhotoSaved: (photo: string | null) => void
   onLost: (message: string) => void
 }) {
   const [draft, setDraft] = useState<Settings>(data.settings)
@@ -437,9 +449,15 @@ function MosqueEditor({
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState<string[] | null>(null)
   const [conflict, setConflict] = useState<Saved | null>(null)
+  const [photoChange, setPhotoChange] = useState<PhotoChange>(undefined)
+  const changePhoto = (next: PhotoChange) => {
+    if (photoChange) URL.revokeObjectURL(photoChange.url)
+    setPhotoChange(next)
+  }
 
   const edited: LayarData = useMemo(() => ({ settings: normalizeSettings(draft), city }), [draft, city])
-  const unsaved = canonical(edited) !== canonical(base.data)
+  const settingsUnsaved = canonical(edited) !== canonical(base.data)
+  const unsaved = settingsUnsaved || photoChange !== undefined
 
   useEffect(() => {
     if (!unsaved) return
@@ -452,6 +470,20 @@ function MosqueEditor({
     setConfirm(null)
     setBusy(true)
     try {
+      // The photo goes first: it is the slow part, and settings that refer to it (position, darkness) follow.
+      if (photoChange !== undefined) {
+        try {
+          onPhotoSaved(await sendPhoto(linkKey, photoChange?.blob ?? null))
+          changePhoto(undefined)
+        } catch (error) {
+          toast.error((error as Error).message)
+          return
+        }
+      }
+      if (!settingsUnsaved) {
+        toast.success("Tersimpan", { description: "TV berubah paling lama 5 menit lagi." })
+        return
+      }
       const res = await fetch("/api/layar/data", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${linkKey}` },
@@ -507,7 +539,16 @@ function MosqueEditor({
           ramadanNow={isRamadan("auto", now, "Asia/Jakarta")}
           today={dateAtOffset(now, 7)}
           locationFallback={locationLabel(city)}
-          photo={<p className="text-xs text-muted-foreground">Foto latar masih diatur langsung di TV.</p>}
+          photo={
+            <BackgroundSection
+              draft={draft}
+              setDraft={setDraft}
+              change={photoChange}
+              onChange={changePhoto}
+              current={photo ? photoUrl(photo) : null}
+              note="Foto dikirim ke server dan tampil di semua TV masjid ini."
+            />
+          }
         />
       </div>
 
@@ -517,7 +558,10 @@ function MosqueEditor({
             {unsaved ? "Ada perubahan yang belum disimpan" : "Semua perubahan sudah tersimpan"}
           </p>
           {unsaved && (
-            <Button variant="ghost" disabled={busy} onClick={() => reset(base)}>
+            <Button variant="ghost" disabled={busy} onClick={() => {
+                reset(base)
+                changePhoto(undefined)
+              }}>
               Batalkan
             </Button>
           )}

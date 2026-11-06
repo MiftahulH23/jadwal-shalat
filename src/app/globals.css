@@ -137,6 +137,13 @@
   html {
     @apply font-sans;
   }
+  /* Owner's choice: no visible scrollbars anywhere. Scrolling itself (wheel, touch, keys) still works. */
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Islamic eight-point star lattice, tinted via currentColor-like stroke */

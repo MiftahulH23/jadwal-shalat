@@ -12,7 +12,7 @@
 | `/api/jadwal/[id]?hari=&lat=&lng=` | Jadwal 1–62 hari | `lib/myquran.ts` |
 | `/api/jadwal/[id]/bulan?tahun=&bulan=&lat=&lng=` | Jadwal sebulan | `lib/myquran.ts` |
 | `/atur` | Mengatur layar TV dari HP (`#p=` QR, `#k=` link HP) | `atur-page.tsx` |
-| `/api/layar/sambung`, `qr`, `klaim`, `data`, `hp`, `pin`, `reset` | Atur dari HP, ke Supabase dengan kunci rahasia | `lib/supabase-server.ts` |
+| `/api/layar/sambung`, `qr`, `klaim`, `data`, `hp`, `pin`, `reset`, `foto` | Atur dari HP, ke Supabase dengan kunci rahasia | `lib/supabase-server.ts` |
 
 ## Atur dari HP (Supabase)
 
@@ -40,7 +40,7 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 - `prayer.ts`: tipe, zona waktu, `getPrayerPhase`, `isJumat`, label, `locationLabel`
 - `settings.ts`: tipe `Settings`, default, `normalizeSettings`, koreksi, Ramadhan, kas, helper kajian
 - `tv.ts`: keputusan layar TV: penyiapan awal, layar shalat, slide, layar malam
-- `layar-data.ts` (data bersama, kunci, link), `layar-pairing.ts` (kapan QR dipakai ulang atau diperbarui), `layar-sync.ts` (tarik atau kirim, konfirmasi perubahan waktu), `layar-public.ts`, `layar-config.ts`, `supabase-server.ts` (khusus server)
+- `layar-data.ts` (data bersama, kunci, link), `layar-pairing.ts` (kapan QR dipakai ulang atau diperbarui), `layar-sync.ts` (tarik atau kirim, konfirmasi perubahan waktu), `layar-public.ts`, `layar-photo.ts` (kirim dan unduh foto), `layar-config.ts`, `supabase-server.ts` (khusus server)
 - `clock.ts`: `correctedNow()`, jam perangkat yang dikoreksi ke jam server
 - `astronomy.ts`: hitung waktu dari koordinat
 - `myquran.ts`: fetch API di server (`server-only`, `use cache`), elevasi Open-Meteo

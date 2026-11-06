@@ -4,7 +4,7 @@ import "server-only"
 
 import { createHmac } from "node:crypto"
 
-import { SUPABASE_URL } from "@/lib/layar-config"
+import { PHOTO_BUCKET, SUPABASE_URL } from "@/lib/layar-config"
 
 export class LayarUnavailable extends Error {}
 
@@ -32,6 +32,32 @@ export async function rpc<T>(fn: string, args: Record<string, unknown>): Promise
   if (!text) return []
   const body = JSON.parse(text)
   return Array.isArray(body) ? body : [body]
+}
+
+/** Stores a background photo in the public bucket. Kept long by browsers and the CDN: a name is never reused. */
+export async function uploadPhoto(path: string, bytes: Uint8Array) {
+  const key = secretKey()
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${PHOTO_BUCKET}/${path}`, {
+    method: "POST",
+    headers: { apikey: key, "Content-Type": "image/jpeg", "cache-control": "max-age=31536000" },
+    body: bytes as BodyInit,
+    cache: "no-store",
+  })
+  if (!res.ok) throw new Error(`Photo upload failed: ${res.status} ${await res.text()}`)
+}
+
+/** Deletes a photo. Failing to is not worth failing the request for: an orphan file costs little. */
+export async function deletePhoto(path: string) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${PHOTO_BUCKET}/${path}`, {
+      method: "DELETE",
+      headers: { apikey: secretKey() },
+      cache: "no-store",
+    })
+    if (!res.ok) console.error(`Photo delete failed: ${res.status} ${await res.text()}`)
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 /**

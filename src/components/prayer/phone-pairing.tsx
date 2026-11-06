@@ -17,7 +17,17 @@ import { formatDuration } from "@/lib/prayer"
 import { cn } from "@/lib/utils"
 
 /** This TV's own key (kept for good) and whether it belongs to a mosque. */
-export type TvLink = { tvKey: string; connected: boolean; version: number | null; synced?: string | null }
+export type TvLink = {
+  tvKey: string
+  connected: boolean
+  version: number | null
+  /** The data last agreed on with the server (see lib/layar-sync.ts). */
+  synced?: string | null
+  /** The photo last agreed on: its path on the server, null for none, undefined when not known yet. */
+  photo?: string | null
+  /** A photo saved on this TV still has to go to the server. */
+  photoPending?: boolean
+}
 
 const RETRY_MS = 15_000
 
@@ -105,7 +115,7 @@ export function PhonePairing({ snapshot, onConnected, onPhoneAdded, className }:
         if (cancelled) return
         if (!check && link.connected) {
           // The mosque was deleted: this TV is on its own again.
-          link = { ...link, connected: false, version: null, synced: null }
+          link = { ...link, connected: false, version: null, synced: null, photo: undefined, photoPending: false }
           setLink(link)
         }
         const outcome = qrOutcome(check ? { connected: true, waiting: check.qrWaiting } : { connected: false }, link.connected, current, correctedNow())

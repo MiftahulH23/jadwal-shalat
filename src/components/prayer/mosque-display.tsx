@@ -221,7 +221,7 @@ function MosqueScreen() {
   // After an emergency reset, the next scan makes a new main manager rather than a waiting phone.
   const [wasReset, setWasReset] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const { connected: phoneConnected, syncSoon } = useLayarSync({
+  const { connected: phoneConnected, syncSoon, pushPhoto } = useLayarSync({
     settings,
     city,
     apply: (data) => {
@@ -661,6 +661,12 @@ function MosqueScreen() {
             onRestore={restoreBackup}
             today={today}
             onOpenChange={setSettingsOpen}
+            onPhotoSaved={(photo) => void pushPhoto(photo)}
+            photoNote={
+              phoneConnected
+                ? "Foto juga dikirim ke server, jadi tampil di semua TV masjid ini dan bisa diganti dari HP pengurus."
+                : undefined
+            }
             trigger="tv"
             triggerClassName={TOOL}
           />

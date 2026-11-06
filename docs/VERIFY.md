@@ -12,7 +12,7 @@ npm run build   # sebelum memakai `next start`
 
 Tes logika waktu ada di `src/lib/*.test.ts` dan berjalan dengan zona waktu New York (`vitest.config.mts`), untuk membuktikan hasilnya tidak bergantung pada zona perangkat. Tulis waktu yang diharapkan dengan `wib()`/`at()` dari `lib/test-week.ts`, bukan dengan `toEpoch`. `astronomy.test.ts` membandingkan hasil hitungan dengan jadwal Kemenag yang diunduh dari API myQuran.
 
-`supabase/layar.test.ts` menjalankan semua file migrasi di Postgres lokal (PGlite) dengan peran Supabase yang ditiru, lalu menguji hak akses tiap peran. Setelah memasang migrasi ke proyek sungguhan, cek juga dari luar dengan kunci publishable: hanya `layar_cek` dan `layar_ambil` yang boleh membalas 200. Namai data uji di proyek sungguhan dengan awalan "Uji E2E" dan hapus sesudahnya. Batas pemakaian per IP ikut terisi saat menguji, jadi `layar.rate_limits` juga perlu dikosongkan.
+`supabase/layar.test.ts` menjalankan semua file migrasi di Postgres lokal (PGlite) dengan peran Supabase yang ditiru, lalu menguji hak akses tiap peran. Setelah memasang migrasi ke proyek sungguhan, cek juga dari luar dengan kunci publishable: hanya `layar_cek` dan `layar_ambil` yang boleh membalas 200. Namai data uji di proyek sungguhan dengan awalan "Uji E2E" dan hapus sesudahnya. Batas pemakaian per IP ikut terisi saat menguji, jadi `layar.rate_limits` juga perlu dikosongkan. Menghapus masjid lewat SQL tidak menghapus file fotonya: hapus juga lewat API Storage dengan kunci rahasia. Di halaman `/atur` ada beberapa tombol berawalan "Simpan" (misalnya Simpan PIN): klik tombol dengan teks yang persis sama.
 
 Tes tidak mencakup tampilan, jadi perubahan tampilan tetap dibuktikan dengan `npm run shot`.
 

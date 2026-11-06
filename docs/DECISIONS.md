@@ -21,6 +21,7 @@ Keputusan pemilik proyek dan alasannya. Jangan membaliknya tanpa bertanya.
 | Pengelola utama, bukan link bersama; TV tidak bisa memutus HP; reset darurat dengan PIN | Usul pemilik: orang iseng yang memegang link atau berdiri di depan TV tidak boleh bisa mengeluarkan pengurus. Batas 3 HP per masjid juga permintaan pemilik |
 | Penyiapan awal `/layar` tidak bisa dilewati tanpa memilih kota, tetapi tidak muncul kalau nama masjid sudah ada | Waktu kota lain di layar masjid adalah kesalahan paling fatal, sedangkan TV yang sedang dipakai tidak boleh tertutup setelah dimuat ulang |
 | Foto hanya di `/layar`, layar shalat dan Jumat lebih gelap, layar malam tetap hitam | Pilihan pemilik: jamaah di HP tidak terganggu dan tidak mengganggu kekhusyukan |
+| Scrollbar disembunyikan di seluruh situs, gulir tetap jalan | Permintaan pemilik |
 | Pengaturan tetap memakai tombol Simpan, dengan peringatan saat menutup yang punya tombol Simpan | Pemilik sering lupa menyimpan dan memilih ini daripada simpan otomatis |
 | Slide dihitung dari jam, bukan timer | Beberapa layar tetap serempak dan tidak perlu state |
 

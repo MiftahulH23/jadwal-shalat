@@ -328,8 +328,17 @@ export function BackgroundSection({
   setDraft,
   change,
   onChange,
-}: SectionProps & { change: PhotoChange; onChange: (next: PhotoChange) => void }) {
-  const stored = useBackgroundPhoto()
+  current,
+  note = "Foto tersimpan di browser ini saja, tidak diunggah. Simpan foto aslinya, dan pasang lagi di perangkat lain atau pindahkan lewat file cadangan.",
+}: SectionProps & {
+  change: PhotoChange
+  onChange: (next: PhotoChange) => void
+  /** The current photo when it is not the one in this browser (e.g. on the server, for a phone). */
+  current?: string | null
+  note?: string
+}) {
+  const local = useBackgroundPhoto()
+  const stored = current === undefined ? local : current
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const photo = change === undefined ? stored : (change?.url ?? null)
@@ -356,10 +365,7 @@ export function BackgroundSection({
         <p className="flex items-center gap-1.5 text-sm font-medium">
           <ImageIcon className="size-4 text-primary" /> Foto latar layar masjid
         </p>
-        <p className="text-xs text-muted-foreground">
-          Foto tersimpan di browser ini saja, tidak diunggah. Simpan foto aslinya, dan pasang lagi di perangkat lain
-          atau pindahkan lewat file cadangan.
-        </p>
+        <p className="text-xs text-muted-foreground">{note}</p>
       </div>
 
       {photo && <PhotoPreview photo={photo} background={draft.background} onMove={set} />}
