@@ -86,3 +86,28 @@ export function timeChanges(before: LayarData, after: LayarData): string[] {
   if (ka !== kb) lines.push(`Durasi khutbah Jumat: ${minutes(ka)} → ${minutes(kb)}`)
   return lines
 }
+
+/** Which parts of the settings differ, named like the tabs of Pengaturan; for the history list. */
+export function changedParts(before: LayarData, after: LayarData): string[] {
+  const a = before.settings
+  const b = after.settings
+  const same = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y)
+  const parts: [string, boolean][] = [
+    ["Lokasi", !same(before.city, after.city)],
+    ["Iqamah", !same(a.iqamah, b.iqamah)],
+    ["Koreksi", !same(a.corrections, b.corrections)],
+    ["Ramadhan", a.ramadan !== b.ramadan],
+    ["Jumat", !same(a.jumat, b.jumat)],
+    ["Petugas", !same(a.petugas, b.petugas)],
+    ["Pengajian", !same(a.kajian, b.kajian)],
+    ["Kas", !same(a.kas, b.kas)],
+    [
+      "Layar",
+      !same(
+        [a.mosqueName, a.mosqueAddress, a.runningText, a.prayingMinutes, a.night, a.background, a.showSimulation],
+        [b.mosqueName, b.mosqueAddress, b.runningText, b.prayingMinutes, b.night, b.background, b.showSimulation]
+      ),
+    ],
+  ]
+  return parts.filter(([, changed]) => changed).map(([name]) => name)
+}

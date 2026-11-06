@@ -104,6 +104,8 @@ describe("what the public key can reach", () => {
     ["layar_atur_hp", "'a', 'b', 'cabut'"],
     ["layar_set_pin", "'a', '123456'"],
     ["layar_reset", "'a', '123456'"],
+    ["layar_riwayat", "'a'"],
+    ["layar_pulihkan", "'a', 1"],
     ["layar_hapus", "'a'"],
     ["layar_batas", "'a', 'b', 1"],
   ])("cannot call %s", async (fn, args) => {
@@ -595,5 +597,52 @@ describe("keys of TVs that are gone", () => {
     await db.query("update layar.keys set last_seen_at = now() - interval '400 days' where role = 'admin'")
     await as("service_role", `select layar_buat_qr('bersih-2', 'tv-bersih-2', null, ${FUTURE})`)
     expect((await info(a.phone)).peran).toBe("admin")
+  })
+})
+
+describe("history", () => {
+  type Revision = { versi: number; isi: { settings: { mosqueName: string } }; terkini: boolean }
+  const riwayat = (key: string) => as<Revision>("service_role", "select * from layar_riwayat($1)", [key])
+  const pulihkan = async (key: string, version: number) =>
+    (await as<{ v: number | null }>("service_role", "select layar_pulihkan($1, $2) as v", [key, version]))[0].v
+
+  it("lists the last five versions, newest first, marking the current one", async () => {
+    const a = await newMosque()
+    for (let v = 1; v <= 6; v++) await simpan(a.phone, `Versi ${v + 1}`, v)
+    const list = await riwayat(a.phone)
+    expect(list.map((r) => r.versi)).toEqual([7, 6, 5, 4, 3])
+    expect(list[0]).toMatchObject({ terkini: true, isi: { settings: { mosqueName: "Versi 7" } } })
+    expect(list.slice(1).every((r) => !r.terkini)).toBe(true)
+  })
+
+  it("brings an old version back as a new one, which the TV sees", async () => {
+    const a = await newMosque()
+    await simpan(a.phone, "Dirusak", 1)
+    expect(await pulihkan(a.phone, 1)).toBe(3)
+    expect((await ambil(a.tv))[0]).toMatchObject({ versi: 3, isi: { settings: { mosqueName: "Masjid A" } } })
+    expect((await riwayat(a.phone)).map((r) => r.versi)).toEqual([3, 2, 1])
+  })
+
+  it("is for main managers only", async () => {
+    const a = await newMosque()
+    await undang(a.phone, "pengurus-riwayat")
+    expect(await riwayat("pengurus-riwayat")).toEqual([])
+    expect(await pulihkan("pengurus-riwayat", 1)).toBeNull()
+    expect(await riwayat(a.tv)).toEqual([])
+    expect(await pulihkan(a.tv, 1)).toBeNull()
+  })
+
+  it("cannot reach another mosque's versions", async () => {
+    const a = await newMosque()
+    const b = await newMosque({ ...DATA, settings: { mosqueName: "Masjid B" } })
+    await simpan(b.phone, "B diubah", 1)
+    expect(await pulihkan(a.phone, 2)).toBeNull()
+    expect((await ambil(b.tv))[0].isi.settings.mosqueName).toBe("B diubah")
+  })
+
+  it("refuses a version that is not kept", async () => {
+    const a = await newMosque()
+    expect(await pulihkan(a.phone, 99)).toBeNull()
+    expect((await cek(a.tv))[0].versi).toBe(1)
   })
 })

@@ -12,7 +12,7 @@
 | `/api/jadwal/[id]?hari=&lat=&lng=` | Jadwal 1–62 hari | `lib/myquran.ts` |
 | `/api/jadwal/[id]/bulan?tahun=&bulan=&lat=&lng=` | Jadwal sebulan | `lib/myquran.ts` |
 | `/atur` | Mengatur layar TV dari HP (`#p=` QR, `#k=` link HP) | `atur-page.tsx` |
-| `/api/layar/sambung`, `qr`, `klaim`, `data`, `hp`, `pin`, `reset`, `foto` | Atur dari HP, ke Supabase dengan kunci rahasia | `lib/supabase-server.ts` |
+| `/api/layar/sambung`, `qr`, `klaim`, `data`, `hp`, `pin`, `reset`, `foto`, `riwayat` | Atur dari HP, ke Supabase dengan kunci rahasia | `lib/supabase-server.ts` |
 
 ## Atur dari HP (Supabase)
 
@@ -61,7 +61,7 @@ Mode GPS memakai `lib/astronomy.ts` untuk menghitung jadwal dari koordinat, deng
 - Halaman: `prayer-dashboard`, `mosque-display`, `monthly-schedule`
 - Hero dan daftar: `countdown-hero`, `day-times`, `week-table`, `ramadan-card`, `kajian-list`
 - Layar TV: `layar-setup` (penyiapan awal), `phone-pairing` (QR), `tv-slides`, `ibadah-jumat-screen`
-- HP: `atur-page`, `managers-card` (pengelola utama: daftar HP, undangan, PIN)
+- HP: `atur-page`, `managers-card` (pengelola utama: daftar HP, undangan, PIN), `history-card` (riwayat, hapus data masjid)
 - TV: `emergency-reset` (reset dengan PIN darurat)
 - Pop-up: `adzan-modal`, `simulation-panel`
 - Pengaturan: `settings-dialog` (jendela), `settings-tabs` (tab, dipakai juga di `/atur`), `settings-sections` (isi tab), `settings-fields` (Stepper, Row, Field, RupiahInput), `backup-panel`, `city-picker`

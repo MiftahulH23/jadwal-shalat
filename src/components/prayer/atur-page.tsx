@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DeleteMosque, HistoryCard } from "@/components/prayer/history-card"
 import { ManagersCard } from "@/components/prayer/managers-card"
 import { BackgroundSection, type PhotoChange } from "@/components/prayer/settings-sections"
 import { SettingsTabs } from "@/components/prayer/settings-tabs"
@@ -413,7 +414,18 @@ function MosqueView({ linkKey }: { linkKey: string }) {
       />
 
       {info.role === "admin" ? (
-        <ManagersCard linkKey={linkKey} mosque={name} hasPin={Boolean(info.hasPin)} onPinSet={() => setInfo({ ...info, hasPin: true })} />
+        <>
+          <ManagersCard linkKey={linkKey} mosque={name} hasPin={Boolean(info.hasPin)} onPinSet={() => setInfo({ ...info, hasPin: true })} />
+          {/* Reloads after bringing a version back, so the form shows it. */}
+          <HistoryCard linkKey={linkKey} refreshKey={info.version} onRestored={() => window.location.reload()} />
+          <DeleteMosque
+            linkKey={linkKey}
+            onDeleted={() => {
+              remove(linkKey)
+              setProblem("Data masjid ini sudah dihapus dari server.")
+            }}
+          />
+        </>
       ) : (
         <Notice title="Anda pengurus masjid ini" tone="ok">
           <p>Undangan dan pencabutan HP diatur oleh pengelola utama.</p>

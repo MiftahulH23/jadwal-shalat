@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import type { LayarData } from "@/lib/layar-data"
-import { canonical, decideSync, timeAgo, timeChanges, tvSeenLabel } from "@/lib/layar-sync"
+import { canonical, changedParts, decideSync, timeAgo, timeChanges, tvSeenLabel } from "@/lib/layar-sync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 
 const JAKARTA = { id: "1301", lokasi: "KOTA JAKARTA" }
@@ -99,5 +99,20 @@ describe("when the TV last checked in", () => {
   it("words other times plainly", () => {
     expect(timeAgo(before(0), now)).toBe("baru saja")
     expect(timeAgo(before(5), now)).toBe("5 menit yang lalu")
+  })
+})
+
+describe("what changed between two versions", () => {
+  it("names the parts like the tabs of Pengaturan", () => {
+    const before = data("A")
+    const after: LayarData = {
+      city: { id: "0412", lokasi: "KOTA PEKANBARU" },
+      settings: { ...before.settings, mosqueName: "B", kas: { ...before.settings.kas, income: 1000 } },
+    }
+    expect(changedParts(before, after)).toEqual(["Lokasi", "Kas", "Layar"])
+  })
+
+  it("names nothing when nothing changed", () => {
+    expect(changedParts(data("A"), data("A"))).toEqual([])
   })
 })

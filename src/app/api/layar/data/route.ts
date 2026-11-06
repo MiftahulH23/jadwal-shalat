@@ -1,7 +1,7 @@
 import { connection } from "next/server"
 
 import { isKey, parseLayarData } from "@/lib/layar-data"
-import { bearer, fail, handle, readJson, rpc, withinLimit } from "@/lib/supabase-server"
+import { bearer, deletePhoto, fail, handle, readJson, rpc, withinLimit } from "@/lib/supabase-server"
 
 type Row = {
   peran: "tv" | "admin" | "editor" | "pending"
@@ -40,6 +40,22 @@ export async function GET(request: Request) {
     const current = await info(key)
     if (!current) return fail(401, "Akses link ini sudah dicabut atau datanya sudah dihapus.")
     return Response.json(current, { headers: noStore })
+  })
+}
+
+/**
+ * Main manager: deletes the mosque from the server, photo included. TVs carry on with the settings they
+ * have; every phone link stops working.
+ */
+export async function DELETE(request: Request) {
+  return handle(async () => {
+    const key = bearer(request)
+    if (!isKey(key)) return fail(401, "Link ini tidak valid.")
+    if (!(await withinLimit(request, "hapus", 10))) return fail(429, "Terlalu sering. Coba lagi nanti.")
+    const [row] = await rpc<{ foto: string | null }>("layar_hapus", { p_key: key })
+    if (!row) return fail(403, "Hanya pengelola utama yang bisa menghapus data masjid.")
+    if (row.foto) await deletePhoto(row.foto)
+    return Response.json({ ok: true }, { headers: noStore })
   })
 }
 

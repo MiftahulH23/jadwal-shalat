@@ -47,7 +47,7 @@ Pemilik ingin memposting setelah fitur ini jadi. Rancangan: `docs/RANCANGAN-ATUR
 - [x] Tahap 3, edit mingguan: simpan dari HP, TV mengecek tiap 5 menit, perubahan di TV ikut terkirim, konflik, konfirmasi perubahan waktu
 - [x] Tahap 4, foto dari HP: unggah dan hapus dari HP atau TV, TV mengunduh sendiri, foto lama dihapus
 - [x] Tahap 5a, kendali: pengelola utama, undangan per orang, persetujuan HP baru, batas 3 HP, reset darurat dengan PIN, pembersihan kunci TV yang hilang
-- [ ] Tahap 5b, riwayat: mengembalikan salah satu dari 5 versi terakhir, hapus data masjid dari HP
+- [x] Tahap 5b, riwayat: pengelola utama mengembalikan salah satu dari 5 versi terakhir (disimpan sebagai versi baru), dan menghapus data masjid beserta fotonya
 - [ ] Tahap 6, publik: halaman privasi, batas pemakaian
 
 ## Akan dibahas lagi
