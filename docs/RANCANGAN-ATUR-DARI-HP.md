@@ -1,6 +1,6 @@
 # Rancangan: mengatur layar TV dari HP
 
-Status: **sedang dikerjakan, tahap 1 sampai 5 selesai; tinggal tahap 6 (publik).** Model pengelola utama menggantikan "Putuskan semua HP" di TV; aturannya ada di `docs/DOMAIN.md`. Pemilik menyetujui Supabase dan ingin memposting setelah fitur ini jadi. SQL terbaru ada di `supabase/migrations/`, dengan tes di `supabase/layar.test.ts`. Kalau berbeda dengan draf di dokumen ini, yang berlaku file migrasi.
+Status: **semua tahap selesai.** Batas paket gratis: 500 masjid dan foto 1,5 MB (lihat `docs/DOMAIN.md`). Model pengelola utama menggantikan "Putuskan semua HP" di TV; aturannya ada di `docs/DOMAIN.md`. Pemilik menyetujui Supabase dan ingin memposting setelah fitur ini jadi. SQL terbaru ada di `supabase/migrations/`, dengan tes di `supabase/layar.test.ts`. Kalau berbeda dengan draf di dokumen ini, yang berlaku file migrasi.
 
 ## Masalah
 

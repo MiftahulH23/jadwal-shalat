@@ -74,6 +74,12 @@ export function AturPage() {
       ) : (
         <LinkList />
       )}
+
+      <p className="mt-8 text-center text-xs text-muted-foreground">
+        <Link href="/privasi" className="underline-offset-4 hover:underline">
+          Data apa yang disimpan?
+        </Link>
+      </p>
     </main>
   )
 }
@@ -261,7 +267,14 @@ function PairFlow({ pair }: { pair: string }) {
           <Input value={chosenName} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Masjid Al-Ikhlas" />
         </label>
         {whoField}
-        <p className="text-xs text-muted-foreground">HP ini menjadi pengelola utama: bisa mengundang hingga 2 pengurus lain.</p>
+        <p className="text-xs text-muted-foreground">
+          HP ini menjadi pengelola utama: bisa mengundang hingga 2 pengurus lain. Data masjid disimpan di server supaya
+          bisa diatur dari HP;{" "}
+          <Link href="/privasi" className="underline underline-offset-4">
+            lihat kebijakan privasi
+          </Link>
+          .
+        </p>
         <Button type="submit" className="w-full" disabled={!chosenCity || busy}>
           {busy && <LoaderCircleIcon className="animate-spin" />}
           {chosenCity ? "Simpan dan hubungkan" : "Pilih kota dulu"}

@@ -300,7 +300,11 @@ export function PrayerDashboard() {
             </a>
 
             {week?.source === "koordinat" && " (mode lokasi: dihitung dari titik GPS dengan parameter Kemenag)"}. Jeda
-            iqamah dan koreksi waktu dapat diatur di menu Pengaturan.
+            iqamah dan koreksi waktu dapat diatur di menu Pengaturan.{" "}
+            <Link href="/privasi" className="underline underline-offset-4">
+              Privasi
+            </Link>
+            .
             {savedAt && (
               <span className="mt-1 block">
                 Jadwal ~2 bulan tersimpan di perangkat ini (diunduh{" "}

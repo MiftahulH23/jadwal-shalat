@@ -1,6 +1,6 @@
 import { QR_MINUTES } from "@/lib/layar-config"
 import { isKey, parseLayarSnapshot } from "@/lib/layar-data"
-import { fail, handle, readJson, rpc, syncEnabled, withinLimit } from "@/lib/supabase-server"
+import { deletePhoto, fail, handle, readJson, rpc, syncEnabled, withinLimit } from "@/lib/supabase-server"
 
 /** TV: opens a QR code. Body: { pair, tvKey, snapshot? }. Answers { expiresAt }. */
 export async function POST(request: Request) {
@@ -13,12 +13,14 @@ export async function POST(request: Request) {
     if (!(await withinLimit(request, "qr", 10))) return fail(429, "Terlalu sering membuat QR. Coba lagi nanti.")
 
     const expiresAt = Date.now() + QR_MINUTES * 60_000
-    await rpc("layar_buat_qr", {
+    // Making a QR code also clears out old data; photos of mosques removed that way are deleted here.
+    const removed = await rpc<string>("layar_buat_qr", {
       p_pair: body.pair,
       p_tv_key: body.tvKey,
       p_snapshot: snapshot,
       p_expires_at: new Date(expiresAt).toISOString(),
     })
+    await Promise.all(removed.filter(Boolean).map(deletePhoto))
     return Response.json({ expiresAt }, { headers: { "Cache-Control": "no-store" } })
   })
 }

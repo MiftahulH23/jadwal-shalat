@@ -11,8 +11,11 @@ export const QR_RENEW_FOR_MS = 60 * 60_000
 /** How often the TV checks whether its QR code was scanned, while it is shown. */
 export const QR_POLL_MS = 5_000
 
-/** Largest photo accepted from a phone or TV: under the 4.5 MB a Vercel function accepts. */
-export const MAX_PHOTO_UPLOAD = 4_000_000
+/**
+ * Largest photo accepted from a phone or TV. 500 mosques (the limit, see supabase/migrations) times this
+ * stays under the 1 GB of storage in Supabase's free plan. A Full HD photo is usually well under it.
+ */
+export const MAX_PHOTO_UPLOAD = 1_500_000
 export const PHOTO_BUCKET = "layar-foto"
 /** Photos are public by their random name; nobody can list or change them without the secret key. */
 export const photoUrl = (path: string) => `${SUPABASE_URL}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`

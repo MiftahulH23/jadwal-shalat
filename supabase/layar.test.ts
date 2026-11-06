@@ -309,7 +309,7 @@ describe("rate limit", () => {
 describe("photo bucket", () => {
   it("is limited to small JPEG files", async () => {
     const { rows } = await db.query("select public, file_size_limit::text as limit, allowed_mime_types from storage.buckets where id = 'layar-foto'")
-    expect(rows).toEqual([{ public: true, limit: "4194304", allowed_mime_types: ["image/jpeg"] }])
+    expect(rows).toEqual([{ public: true, limit: "1572864", allowed_mime_types: ["image/jpeg"] }])
   })
 })
 
@@ -644,5 +644,46 @@ describe("history", () => {
     const a = await newMosque()
     expect(await pulihkan(a.phone, 99)).toBeNull()
     expect((await cek(a.tv))[0].versi).toBe(1)
+  })
+})
+
+describe("free plan limits", () => {
+  it("refuses a new mosque once 500 exist, keeping the QR code valid", async () => {
+    const before = (await db.query<{ n: number }>("select count(*)::int as n from layar.displays")).rows[0].n
+    await db.query(`insert into layar.displays (data) select '{"settings":{}}'::jsonb from generate_series(1, ${500 - before})`)
+    await as("service_role", `select layar_buat_qr('kuota', 'tv-kuota', null, ${FUTURE})`)
+    const [row] = await as<{ peran: string; display: string | null }>("service_role", "select * from layar_klaim('kuota', 'hp-kuota', $1)", [
+      JSON.stringify(DATA),
+    ])
+    expect(row).toMatchObject({ peran: "penuh", display: null })
+    expect(await as("service_role", "select * from layar_lihat_qr('kuota')")).toHaveLength(1)
+    // An existing mosque still gets new TVs and phones.
+    await db.query(`delete from layar.displays where data = '{"settings":{}}'::jsonb`)
+  })
+})
+
+describe("mosques nobody used for a year", () => {
+  it("are deleted when a QR code is made, returning their photo to delete", async () => {
+    const old = await newMosque()
+    const active = await newMosque()
+    await as("service_role", "select * from layar_set_foto($1, 'lama.jpg')", [old.phone])
+    await db.query(
+      "update layar.displays set created_at = now() - interval '13 months', updated_at = now() - interval '13 months', tv_seen_at = now() - interval '13 months' where id = $1",
+      [old.id]
+    )
+    const photos = await as<{ layar_buat_qr: string }>("service_role", `select * from layar_buat_qr('rapi', 'tv-rapi', null, ${FUTURE})`)
+    expect(photos.map((p) => Object.values(p)[0])).toEqual(["lama.jpg"])
+    expect(await info(old.phone)).toBeUndefined()
+    expect((await info(active.phone)).peran).toBe("admin")
+  })
+
+  it("are kept while a TV still checks in", async () => {
+    const a = await newMosque()
+    await db.query(
+      "update layar.displays set created_at = now() - interval '2 years', updated_at = now() - interval '2 years', tv_seen_at = now() - interval '1 day' where id = $1",
+      [a.id]
+    )
+    await as("service_role", `select * from layar_buat_qr('rapi-2', 'tv-rapi-2', null, ${FUTURE})`)
+    expect((await info(a.phone)).peran).toBe("admin")
   })
 })

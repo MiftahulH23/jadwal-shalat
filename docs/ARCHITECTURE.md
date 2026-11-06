@@ -12,6 +12,7 @@
 | `/api/jadwal/[id]?hari=&lat=&lng=` | Jadwal 1–62 hari | `lib/myquran.ts` |
 | `/api/jadwal/[id]/bulan?tahun=&bulan=&lat=&lng=` | Jadwal sebulan | `lib/myquran.ts` |
 | `/atur` | Mengatur layar TV dari HP (`#p=` QR, `#k=` link HP) | `atur-page.tsx` |
+| `/privasi` | Data yang disimpan dan cara menghapusnya | `app/privasi/page.tsx` |
 | `/api/layar/sambung`, `qr`, `klaim`, `data`, `hp`, `pin`, `reset`, `foto`, `riwayat` | Atur dari HP, ke Supabase dengan kunci rahasia | `lib/supabase-server.ts` |
 
 ## Atur dari HP (Supabase)

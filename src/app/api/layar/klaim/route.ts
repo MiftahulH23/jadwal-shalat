@@ -26,6 +26,9 @@ export async function POST(request: Request) {
       p_label: label,
     })
     if (!row) return fail(410, "QR ini sudah tidak berlaku. Pindai QR yang sedang tampil di TV.")
+    if (row.peran === "penuh") {
+      return fail(503, "Layanan gratis ini sudah menampung jumlah masjid maksimal. Coba lagi nanti atau hubungi pengelola website.")
+    }
     return Response.json({ role: row.peran }, { headers: { "Cache-Control": "no-store" } })
   })
 }
