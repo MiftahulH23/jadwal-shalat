@@ -14,7 +14,7 @@ import { useHydrated, usePersistedState } from "@/hooks/use-persisted-state"
 import { PHONE_LINKS_KEY } from "@/lib/layar-config"
 import { editUrl, newKey, readAturHash, type LayarData, type LayarSnapshot } from "@/lib/layar-data"
 import { dateAtOffset, locationLabel, type City } from "@/lib/prayer"
-import { canonical, timeChanges } from "@/lib/layar-sync"
+import { canonical, timeAgo, timeChanges, tvSeenLabel } from "@/lib/layar-sync"
 import { DEFAULT_SETTINGS, isRamadan, normalizeSettings, type Settings } from "@/lib/settings"
 
 /** A mosque this phone can manage. Only on this phone: the server keeps just a hash of the key. */
@@ -253,14 +253,8 @@ function PairFlow({ pair }: { pair: string }) {
 
 type MosqueInfo = { version: number; data: LayarData | null; updatedAt: string; tvSeenAt: string | null }
 
-const ago = (iso: string | null) => {
-  if (!iso) return "belum pernah"
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000)
-  const rtf = new Intl.RelativeTimeFormat("id", { numeric: "auto" })
-  if (minutes < 60) return minutes < 1 ? "baru saja" : rtf.format(-minutes, "minute")
-  if (minutes < 48 * 60) return rtf.format(-Math.round(minutes / 60), "hour")
-  return rtf.format(-Math.round(minutes / 1440), "day")
-}
+/** How often the phone page refreshes the status while it is open. */
+const STATUS_REFRESH_MS = 60_000
 
 /** A mosque this phone manages: its status, its settings, and sharing with other managers. */
 function MosqueView({ linkKey }: { linkKey: string }) {
@@ -284,6 +278,28 @@ function MosqueView({ linkKey }: { linkKey: string }) {
     }
     // Load once per link; remove() changes with every render of the list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkKey])
+
+  // The status changes while the page is open (the TV checks in), so it is refreshed now and then.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return
+      fetch("/api/layar/data", { headers: { Authorization: `Bearer ${linkKey}` }, cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((body: MosqueInfo | null) => {
+          setNow(Date.now())
+          // Only the status: the form keeps what is being typed.
+          if (body) setInfo((prev) => prev && { ...prev, tvSeenAt: body.tvSeenAt, updatedAt: body.updatedAt })
+        })
+        .catch(() => {})
+    }
+    const timer = setInterval(refresh, STATUS_REFRESH_MS)
+    document.addEventListener("visibilitychange", refresh)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener("visibilitychange", refresh)
+    }
   }, [linkKey])
 
   // Keep the list of mosques on this phone up to date, e.g. for a link someone shared.
@@ -325,11 +341,11 @@ function MosqueView({ linkKey }: { linkKey: string }) {
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-muted/60 p-3">
             <dt className="text-muted-foreground">TV terakhir terhubung</dt>
-            <dd className="font-medium">{ago(info.tvSeenAt)}</dd>
+            <dd className="font-medium">{tvSeenLabel(info.tvSeenAt, now)}</dd>
           </div>
           <div className="rounded-xl bg-muted/60 p-3">
             <dt className="text-muted-foreground">Terakhir diubah</dt>
-            <dd className="font-medium">{ago(info.updatedAt)}</dd>
+            <dd className="font-medium">{timeAgo(info.updatedAt, now)}</dd>
           </div>
         </dl>
       </div>

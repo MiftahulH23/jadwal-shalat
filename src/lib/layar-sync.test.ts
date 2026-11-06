@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import type { LayarData } from "@/lib/layar-data"
-import { canonical, decideSync, timeChanges } from "@/lib/layar-sync"
+import { canonical, decideSync, timeAgo, timeChanges, tvSeenLabel } from "@/lib/layar-sync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 
 const JAKARTA = { id: "1301", lokasi: "KOTA JAKARTA" }
@@ -78,5 +78,26 @@ describe("changes that move prayer times", () => {
     const here = { ...JAKARTA, place: { lat: -6.2, lng: 106.8, kecamatan: "Menteng" } }
     const there = { ...JAKARTA, place: { lat: -6.3, lng: 106.9, kecamatan: "Menteng" } }
     expect(timeChanges(data("A", here), data("A", there))).toHaveLength(1)
+  })
+})
+
+describe("when the TV last checked in", () => {
+  const now = Date.UTC(2026, 10, 6, 8, 0)
+  const before = (min: number) => new Date(now - min * 60_000).toISOString()
+
+  it("says within the last hour, since the server notes it only once an hour", () => {
+    expect(tvSeenLabel(before(0), now)).toBe("dalam 1 jam terakhir")
+    expect(tvSeenLabel(before(59), now)).toBe("dalam 1 jam terakhir")
+  })
+
+  it("says how long ago after that, and when it never did", () => {
+    expect(tvSeenLabel(before(180), now)).toBe("3 jam yang lalu")
+    expect(tvSeenLabel(before(3 * 1440), now)).toBe("3 hari yang lalu")
+    expect(tvSeenLabel(null, now)).toBe("belum pernah")
+  })
+
+  it("words other times plainly", () => {
+    expect(timeAgo(before(0), now)).toBe("baru saja")
+    expect(timeAgo(before(5), now)).toBe("5 menit yang lalu")
   })
 })

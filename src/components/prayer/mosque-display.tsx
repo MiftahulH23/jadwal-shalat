@@ -218,7 +218,7 @@ function MosqueScreen() {
   const audioBlocked = useAudioBlocked()
   const [pairOpen, setPairOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const { connected: phoneConnected } = useLayarSync({
+  const { connected: phoneConnected, syncSoon } = useLayarSync({
     settings,
     city,
     apply: (data) => {
@@ -233,7 +233,9 @@ function MosqueScreen() {
   const onActivity = useCallback(() => {
     pokeControls()
     setWakeUntil(correctedNow() + 60_000)
-  }, [pokeControls])
+    // Someone is at the TV, maybe right after saving on a phone: check for changes now.
+    syncSoon()
+  }, [pokeControls, syncSoon])
 
   useEffect(() => {
     window.addEventListener("keydown", onActivity)

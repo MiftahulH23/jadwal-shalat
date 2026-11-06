@@ -15,6 +15,7 @@ import type { Settings } from "@/lib/settings"
 /** Waits a little after a change on the TV, so several quick edits go out as one save. */
 const PUSH_DELAY_MS = 3_000
 const RETRY_MS = 60_000
+const QUICK_CHECK_MS = 15_000
 
 function readLink(): TvLink | null {
   try {
@@ -150,5 +151,13 @@ export function useLayarSync({ settings, city, apply, paused }: Options) {
     return () => clearInterval(timer)
   }, [connected, local, synced, sync])
 
-  return { connected }
+  /** Checks now, e.g. when someone at the TV presses a key after saving on a phone. At most every 15 seconds. */
+  const lastQuick = useRef(0)
+  const syncSoon = useCallback(() => {
+    if (!connected || Date.now() - lastQuick.current < QUICK_CHECK_MS) return
+    lastQuick.current = Date.now()
+    void sync()
+  }, [connected, sync])
+
+  return { connected, syncSoon }
 }

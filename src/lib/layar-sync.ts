@@ -37,6 +37,27 @@ export function decideSync(state: SyncedState, remoteVersion: number, local: str
   return changedHere ? { action: "push" } : { action: "idle" }
 }
 
+const rtf = new Intl.RelativeTimeFormat("id", { numeric: "auto" })
+
+/** "5 menit yang lalu", "2 jam yang lalu"… */
+export function timeAgo(iso: string | null, now: number) {
+  if (!iso) return "belum pernah"
+  const min = Math.round((now - new Date(iso).getTime()) / 60_000)
+  if (min < 1) return "baru saja"
+  if (min < 60) return rtf.format(-min, "minute")
+  if (min < 48 * 60) return rtf.format(-Math.round(min / 60), "hour")
+  return rtf.format(-Math.round(min / 1440), "day")
+}
+
+/**
+ * When the TV last checked in. The server notes this at most once an hour (to save writes), so within
+ * the hour only "dalam 1 jam terakhir" is honest.
+ */
+export function tvSeenLabel(iso: string | null, now: number) {
+  if (!iso) return "belum pernah"
+  return now - new Date(iso).getTime() < 60 * 60_000 ? "dalam 1 jam terakhir" : timeAgo(iso, now)
+}
+
 const minutes = (n: number) => `${n} menit`
 const signed = (n: number) => `${n > 0 ? "+" : ""}${n} menit`
 
